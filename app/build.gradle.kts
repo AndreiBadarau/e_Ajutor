@@ -83,5 +83,6 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
-    implementation (platform("com.google.firebase:firebase-bom:32.2.0"))
+    implementation (platform("com.google.firebase:firebase-bom:33.15.0"))
+    implementation ("com.firebaseui:firebase-ui-firestore:8.0.0")
 }

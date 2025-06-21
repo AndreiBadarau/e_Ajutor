@@ -17,6 +17,10 @@
     <color name="black">#FF000000</color>
     <color name="grey">#808080</color>
     <color name="light_grey">#D3D3D3</color>
+    <color name="green">#00FF00</color>
+    <color name="red">#FF0000</color>
+    <color name="blue">#0000FF</color>
+    <color name="yellow">#FFFF00</color>
 
     <!-- Error Colors -->
     <color name="colorError">#D32F2F</color> <!-- A standard Material Red for errors -->
@@ -33,6 +37,8 @@
     <color name="status_indicator_green">#4CAF50</color>
     <color name="status_indicator_yellow">#FFEB3B</color>
     <color name="status_indicator_red">#F44336</color>
-    <color name="grey_medium">a1a1a1</color>
+    <color name="grey_medium">#a1a1a1</color>
+    <color name="grey_dark">#666666</color>
+    <color name="dark_gray">#666666</color>
 
 </resources>

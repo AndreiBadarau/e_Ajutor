@@ -241,8 +241,10 @@ class AddRequestViewModel : ViewModel() {
                 val request = UserRequest(
                     id = requestId, // Use ViewModel's requestId
                     userId = userId,
+                    userName = userDoc.getString("firstName") + " " + userDoc.getString("lastName") ?: "",
                     operatorId = operatorId,
                     benefitTypeId = currentSelectedBenefit.id,
+                    benefitTypeName = currentSelectedBenefit.name,
                     location = userCounty,
                     documentLinks = currentUploadedDocsMap,
                     status = "pending",

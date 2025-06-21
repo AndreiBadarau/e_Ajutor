@@ -1,110 +1,70 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.viewRequests.ViewRequestsFragment">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+    <!-- This LinearLayout groups the tabs and the list content -->
+    <LinearLayout
+        android:id="@+id/list_content_group"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/Theme.EAjutor.AppBarOverlay">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <!-- app:layout_behavior="@string/appbar_scrolling_view_behavior" would typically be on a direct child of CoordinatorLayout that's scrollable below an AppBarLayout.
+             If the Activity has the AppBar, this behavior tag might not be needed here, or the root of this fragment (CoordinatorLayout) might be what scrolls if the activity's content can scroll.
+             For simplicity, we'll assume the fragment's content fits or the RecyclerView handles its own scrolling. -->
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.EAjutor.PopupOverlay"
-            app:title="My Requests" />
-        <!-- Title will be dynamically set based on role -->
-
-        <!-- Filter Tabs (User and Operator History) -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout_filters"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/colorPrimaryVariant"
-            app:tabGravity="fill"
-            app:tabIndicatorColor="@color/colorAccent"
             app:tabMode="scrollable"
-            app:tabSelectedTextColor="@color/colorAccent"
-            app:tabTextColor="@color/white" />
-        <!-- Tabs: All, Pending, Approved, Rejected -->
-        <!-- Visibility can be controlled, or items added dynamically based on role -->
+            app:tabGravity="fill"
+            android:background="?attr/colorSurface"/>
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView_requests"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp"
+                tools:listitem="@layout/request_item_layout" />
+
+            <ProgressBar
+                android:id="@+id/progressBar_requests"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
+            <TextView
+                android:id="@+id/textView_empty_list"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="No requests found."
+                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+        </RelativeLayout>
+    </LinearLayout>
+
+    <!-- Included Detail View Content -->
+    <include
+        android:id="@+id/detail_content"
+        layout="@layout/layout_request_detail_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <!-- Search Bar (Optional) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputLayout_search"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:hint="Search by Request ID or Benefit"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:startIconDrawable="@drawable/ic_search">
-            <!-- Set visibility to visible if implementing search -->
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editText_search"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView_requests"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginTop="8dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textInputLayout_search"
-            tools:listitem="@layout/request_row_item" />
-
-        <!-- Empty State View -->
-        <TextView
-            android:id="@+id/textView_empty_list"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No requests found."
-            android:textSize="18sp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textInputLayout_search"
-            tools:visibility="visible" />
-
-        <ProgressBar
-            android:id="@+id/progressBar_requests"
-            style="?android:attr/progressBarStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:visibility="visible" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        android:visibility="gone"
+        tools:visibility="visible"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

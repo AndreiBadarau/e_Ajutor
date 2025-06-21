@@ -7,15 +7,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.preference.isNotEmpty
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.material.card.MaterialCardView
-import com.licenta.e_ajutor.R // Make sure this path is correct
-import com.licenta.e_ajutor.model.UserRequest // Make sure this path is correct
+import com.licenta.e_ajutor.R
+import com.licenta.e_ajutor.model.UserRequest
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class RequestAdapter(
     options: FirestoreRecyclerOptions<UserRequest>,

@@ -4,8 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -25,6 +28,9 @@ class MainUserActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val toolbar: Toolbar = findViewById(R.id.activityToolbar)
+        setSupportActionBar(toolbar)
+
         auth = Firebase.auth
 
         if (auth.currentUser == null) {
@@ -41,6 +47,19 @@ class MainUserActivity : AppCompatActivity() {
 
         // Setup BottomNavigationView with NavController
         binding.navView.setupWithNavController(navController)
+
+        // After binding.navView.setupWithNavController(navController)
+// Setup ActionBar with NavController
+        setSupportActionBar(binding.activityToolbar) // Assuming your Toolbar ID is activityToolbar
+        setupActionBarWithNavController(
+            navController,
+            AppBarConfiguration(navController.graph)
+        ) // Default for top-level
+// For more granular control over which destinations are top-level (no back arrow):
+// val appBarConfiguration = AppBarConfiguration(
+//     setOf(R.id.home_destination, R.id.requests_destination, R.id.profile_destination) // Your top-level fragment IDs
+// )
+// setupActionBarWithNavController(navController, appBarConfiguration)
     }
 
     override fun onSupportNavigateUp(): Boolean {

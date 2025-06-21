@@ -14,7 +14,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class ChatMessageAdapter(
-    options: FirestoreRecyclerOptions<ChatMessage>
+    options: FirestoreRecyclerOptions<ChatMessage>,
+    string: String
 ) : FirestoreRecyclerAdapter<ChatMessage, ChatMessageAdapter.ChatMessageViewHolder>(options) {
 
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
