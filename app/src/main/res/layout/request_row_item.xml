@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="4dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="8dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Benefit Type Icon -->
+        <ImageView
+            android:id="@+id/imageView_benefit_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:srcCompat="@drawable/ic_benefit_placeholder" /> <!-- Placeholder icon -->
+
+        <!-- Benefit Type Text -->
+        <TextView
+            android:id="@+id/textView_benefit_type"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:textAppearance="?attr/textAppearanceListItem"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/view_status_indicator"
+            app:layout_constraintStart_toEndOf="@id/imageView_benefit_icon"
+            app:layout_constraintTop_toTopOf="@id/imageView_benefit_icon"
+            tools:text="Unemployment Benefit" />
+
+        <!-- User Name (for Operator view) -->
+        <TextView
+            android:id="@+id/textView_user_name_or_request_id_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/textView_benefit_type"
+            app:layout_constraintTop_toBottomOf="@id/textView_benefit_type"
+            tools:text="User: John Doe (ID: xyz123)" />
+        <!-- This will be dynamically populated or its label changed -->
+
+        <!-- Submission Date -->
+        <TextView
+            android:id="@+id/textView_submission_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/textView_benefit_type"
+            app:layout_constraintTop_toBottomOf="@id/textView_user_name_or_request_id_label"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/textView_status"
+            tools:text="Submitted: 2023-10-27" />
+
+        <!-- Status Text -->
+        <TextView
+            android:id="@+id/textView_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:textAppearance="?attr/textAppearanceBody2"
+            android:textStyle="italic"
+            app:layout_constraintBottom_toBottomOf="@id/textView_benefit_type"
+            app:layout_constraintEnd_toStartOf="@id/view_status_indicator"
+            app:layout_constraintTop_toTopOf="@id/textView_benefit_type"
+            tools:text="Pending" />
+
+        <!-- Status Indicator (Colored View) -->
+        <View
+            android:id="@+id/view_status_indicator"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="4dp"
+            app:layout_constraintBottom_toBottomOf="@id/textView_status"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/textView_status"
+            tools:background="@drawable/status_indicator_yellow_bg" /> <!-- Placeholder background -->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

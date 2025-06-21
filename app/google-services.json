@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "260491263271",
+    "project_id": "e-ajutor",
+    "storage_bucket": "e-ajutor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260491263271:android:50c2ce58a4fab28bc13d02",
+        "android_client_info": {
+          "package_name": "com.licenta.e_ajutor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "260491263271-1l8j98qvbrohurauleujbqlmrue68phl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.licenta.e_ajutor",
+            "certificate_hash": "bc3669fc4576ab7b973d90162ae90fee7c33d100"
+          }
+        },
+        {
+          "client_id": "260491263271-9tm38ghgl8j60rdlfqhev9tg5i14rnek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBxG2crMnqoEYyOKCreBHkIvs81BCOM50"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "260491263271-9tm38ghgl8j60rdlfqhev9tg5i14rnek.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

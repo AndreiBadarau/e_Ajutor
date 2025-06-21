@@ -1,0 +1,16 @@
+package com.licenta.e_ajutor.model
+
+import com.google.firebase.Timestamp
+
+data class UserRequest(
+    val id: String = "",
+    val userId: String = "",
+    val operatorId: String = "",
+    val benefitTypeId: String = "",
+    val location: String = "",
+    val documentLinks: Map<String, String> = emptyMap(), // docId -> Storage URL
+    val status: String = "pending",
+    val timestamp: Timestamp = Timestamp.now(),
+    val iban: String = "",
+    val extraInfo: String = ""
+)

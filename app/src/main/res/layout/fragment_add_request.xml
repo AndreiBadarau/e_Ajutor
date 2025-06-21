@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/addRequestRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="ui.addRequests.AddRequestFragment">
+
+   <ScrollView
+       android:id="@+id/requestScrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/addRequestLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Titlu -->
+        <TextView
+            android:id="@+id/requestTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:text="Submit a New Request"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- Selectarea indemnizației -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select benefit type:" />
+
+        <Spinner
+            android:id="@+id/benefitTypeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Descriere dinamica indemnizație -->
+        <TextView
+            android:id="@+id/benefitDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Benefit description will appear here."
+            android:textColor="#555555"
+            android:textSize="14sp" />
+
+        <!-- Documente necesare -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Required Documents:"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/requiredDocsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:orientation="vertical">
+            <!-- Dinamic: lista cu documente necesare -->
+        </LinearLayout>
+
+        <!-- Upload Section -->
+        <Button
+            android:id="@+id/uploadDocumentButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Upload Document" />
+
+        <TextView
+            android:id="@+id/uploadStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="16dp"
+            android:text="No file uploaded."
+            android:textColor="#777777"
+            android:textSize="12sp" />
+
+        <!-- Extra fields -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="IBAN:" />
+
+        <EditText
+            android:id="@+id/ibanEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="Enter your IBAN"
+            android:inputType="text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Additional Information:" />
+
+        <EditText
+            android:id="@+id/extraInfoEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="top"
+            android:hint="Optional notes..."
+            android:inputType="textMultiLine"
+            android:minLines="3" />
+
+        <!-- Confirm GDPR -->
+        <CheckBox
+            android:id="@+id/gdprCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="I agree to the processing of my personal data (GDPR)" />
+
+        <!-- Submit Button -->
+        <Button
+            android:id="@+id/submitRequestButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?android:attr/colorAccent"
+            android:text="Submit Request"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+</ScrollView>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        tools:visibility="visible" />
+</FrameLayout>

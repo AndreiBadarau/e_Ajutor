@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="@string/title_profile" />
+
+    <item
+        android:id="@+id/navigation_add_request"
+        android:icon="@drawable/ic_add"
+        android:title="@string/add_requests" />
+
+    <item
+        android:id="@+id/navigation_see_requests"
+        android:icon="@drawable/ic_requests"
+        android:title="@string/see_requests" />
+
+</menu>

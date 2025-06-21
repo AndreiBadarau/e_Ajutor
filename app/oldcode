@@ -1,0 +1,146 @@
+###########################################################################################
+LoginActivity.kt
+
+private fun setupBiometricLoginPrompt() {
+        biometricPromptLogin = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    Toast.makeText(applicationContext, "Biometric error: $errString", Toast.LENGTH_SHORT).show()
+                    if (errorCode == BiometricPrompt.ERROR_USER_CANCELED) return
+                    // Offer fallback to password if critical error
+                    binding.editTextEmailLogin.visibility = View.VISIBLE
+                    binding.editTextPasswordLogin.visibility = View.VISIBLE
+                    binding.buttonLogin.visibility = View.VISIBLE
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    Log.d(TAG, "Biometric Authentication Succeeded for login.")
+                    result.cryptoObject?.cipher?.let { rsaCipherForSymmetricKey ->
+                        decryptAndSignIn(rsaCipherForSymmetricKey)
+                    } ?: run {
+                        Log.e(TAG, "Failed to get cipher from CryptoObject after biometric auth.")
+                        Toast.makeText(applicationContext, "Biometric login failed: Crypto error.", Toast.LENGTH_LONG).show()
+                    }
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Toast.makeText(applicationContext, "Biometric authentication failed. Try again or use password.", Toast.LENGTH_LONG).show()
+                }
+            })
+
+        promptInfoLogin = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Biometric Login")
+            .setSubtitle("Log in using your fingerprint or face")
+            .setNegativeButtonText("Use Password") // Allows user to cancel and use password
+            .build()
+    }
+
+    private fun checkBiometricAvailabilityAndSetup() {
+        val prefs = this.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val keyAlias = lastUserBioKeyAlias
+        val isEnabledKey = lastUserIsBiometricEnabledKey
+
+        if (keyAlias != null && isEnabledKey != null && prefs.getBoolean(isEnabledKey, false)) {
+            val biometricManager = BiometricManager.from(this)
+            if (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS) {
+                binding.buttonBiometricLogin.visibility = View.VISIBLE
+                return
+            } else {
+                // Biometrics were enabled but now hardware status is bad
+                Log.w(TAG, "Biometric login was enabled, but hardware not available. Hiding button.")
+                // Optionally: You might want to inform the user or auto-disable the pref here
+            }
+        }
+        binding.buttonBiometricLogin.visibility = View.GONE
+    }
+
+##################################################################################################
+UserProfileActivity.kt
+
+private fun setupAndStoreBiometricCredentials(bioKeyAlias: String) {
+        val user = auth.currentUser
+        if (user == null) {
+            Log.e(TAG, "User is null, cannot setup biometric credentials.")
+            Toast.makeText(this, "Error: User not signed in.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val userId = user.uid
+        val userEmail = user.email
+
+        // Get the ID token
+        user.getIdToken(true).addOnSuccessListener { getIdTokenResult ->
+            val idToken = getIdTokenResult.token
+
+            if (idToken == null) {
+                Log.e(TAG, "Failed to get ID token for user $userId")
+                Toast.makeText(this, "Failed to get user token.", Toast.LENGTH_SHORT).show()
+                return@addOnSuccessListener
+            }
+
+            if (userEmail == null) {
+                Log.w(TAG, "User email is null for UID: $userId. Proceeding without email in biometric store.")
+                // You might choose to handle this differently, e.g., not allow biometric setup without email
+                // or store only the ID token. For this example, we'll proceed and it will be null in JSON.
+            }
+
+            Log.d(TAG, "Attempting to store biometric credentials for UID: $userId, KeyAlias: $bioKeyAlias")
+
+            // 1. Get the RSA Public Key associated with the bioKeyAlias
+            // This key should have been created when 'bioKeyAlias' was generated.
+            val rsaPublicKey = BiometricCryptographyManager.getPublicKey(bioKeyAlias)
+
+            if (rsaPublicKey == null) {
+                Log.e(TAG, "Could not get RSA Public Key for alias: $bioKeyAlias. Aborting biometric setup.")
+                Toast.makeText(this, "Biometric key error. Please try again.", Toast.LENGTH_SHORT).show()
+                // Consider deleting the key alias if it's in a bad state
+                // BiometricCryptographyManager.deleteInvalidKey(bioKeyAlias)
+                return@addOnSuccessListener
+            }
+
+            // 2. Create a JSON object with user data
+            val userDataMap = mutableMapOf<String, String?>()
+            userDataMap["idToken"] = idToken
+            userDataMap["email"] = userEmail // This can be null if userEmail was null
+
+            val userDataJson = JSONObject(userDataMap).toString()
+            Log.d(TAG, "User data JSON to encrypt: $userDataJson")
+
+
+            // 3. Encrypt the JSON string
+            val encryptedUserPayload = BiometricCryptographyManager.encryptDataHybrid(userDataJson, rsaPublicKey)
+
+            if (encryptedUserPayload != null) {
+                // 4. Store the encrypted payload components and other relevant info
+                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val editor = prefs.edit()
+
+                editor.putString("bio_enc_sym_key_userdata_$userId", encryptedUserPayload.encryptedSymmetricKey)
+                editor.putString("bio_iv_userdata_$userId", encryptedUserPayload.iv)
+                editor.putString("bio_enc_data_userdata_$userId", encryptedUserPayload.encryptedData)
+
+                editor.putString(PREF_LAST_LOGGED_IN_UID, userId)
+                editor.putString(PREF_BIOMETRIC_KEY_ALIAS_PREFIX + userId, bioKeyAlias) // Store the actual key alias used
+                editor.putBoolean(PREF_IS_BIOMETRIC_ENABLED_PREFIX + userId, true)
+
+                editor.apply()
+
+                Log.i(TAG, "Biometric credentials successfully stored for UID: $userId")
+                Toast.makeText(this, "Biometrics enabled successfully!", Toast.LENGTH_SHORT).show()
+                // Update UI (e.g., show "Biometrics Enabled", disable setup button)
+
+            } else {
+                Log.e(TAG, "Failed to encrypt user data for biometric storage.")
+                Toast.makeText(this, "Failed to save biometric settings. Please try again.", Toast.LENGTH_SHORT).show()
+                // Potentially delete the key alias if encryption failed, as it might be unusable
+                // BiometricCryptographyManager.deleteInvalidKey(bioKeyAlias)
+            }
+
+        }.addOnFailureListener { e ->
+            Log.e(TAG, "Failed to get ID token: ", e)
+            Toast.makeText(this, "Error fetching user data. Cannot enable biometrics.", Toast.LENGTH_LONG).show()
+        }
+    }

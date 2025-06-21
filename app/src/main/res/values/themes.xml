@@ -1,0 +1,77 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <!--    <style name="Theme.EAjutor" parent="Theme.MaterialComponents.DayNight.DarkActionBar">-->
+    <!--        &lt;!&ndash; Primary brand color. &ndash;&gt;-->
+    <!--        <item name="colorPrimary">@color/purple_500</item>-->
+    <!--        <item name="colorPrimaryVariant">@color/purple_700</item>-->
+    <!--        <item name="colorOnPrimary">@color/white</item>-->
+    <!--        &lt;!&ndash; Secondary brand color. &ndash;&gt;-->
+    <!--        <item name="colorSecondary">@color/teal_200</item>-->
+    <!--        <item name="colorSecondaryVariant">@color/teal_700</item>-->
+    <!--        <item name="colorOnSecondary">@color/black</item>-->
+    <!--        &lt;!&ndash; Status bar color. &ndash;&gt;-->
+    <!--        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>-->
+    <!--        &lt;!&ndash; Customize your theme here. &ndash;&gt;-->
+
+    <!--        &lt;!&ndash; Important: nu activa transparent system bars &ndash;&gt;-->
+    <!--        <item name="android:windowTranslucentNavigation">false</item>-->
+    <!--        <item name="android:windowTranslucentStatus">false</item>-->
+    <!--        <item name="android:windowDrawsSystemBarBackgrounds">true</item>-->
+    <!--        <item name="android:windowIsTranslucent">false</item>-->
+    <!--        <item name="android:windowSoftInputMode">adjustResize</item>-->
+
+    <!--    </style>-->
+
+    <!-- Base application theme. -->
+    <style name="Theme.EAjutor" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/white</item> <!-- Text/icons on primary color -->
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/colorSecondary</item> <!-- Often same as accent -->
+        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
+        <item name="colorOnSecondary">@color/black</item> <!-- Text/icons on secondary color -->
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <!-- Customize your theme here. -->
+
+        <!-- Define error colors -->
+        <item name="colorError">@color/colorError</item>
+        <item name="colorOnError">@color/white</item> <!-- Text/icons on error color -->
+        <item name="colorErrorContainer">@color/colorErrorBackground</item>
+        <item name="colorOnErrorContainer">@color/colorError</item>
+
+        <!-- Other theme attributes -->
+    </style>
+
+    <!-- AppBarOverlay: Used for the AppBar/Toolbar itself -->
+    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <!--
+            If your Toolbar background (colorPrimary) is dark, use Dark.ActionBar.
+            This makes Toolbar title text and icons light (e.g., white).
+            If your Toolbar background is light, you might use ThemeOverlay.MaterialComponents.Light.ActionBar
+            or customize text colors directly.
+        -->
+    </style>
+
+    <!-- PopupOverlay: Used for the Toolbar's overflow popup menu -->
+    <style name="Theme.EAjutor.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light">
+        <!--
+            This makes the background of the popup menu light and the text dark.
+            You can customize itemBackground, itemTextColor etc. here if needed.
+        -->
+        <!-- Example:
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:background">?attr/colorSurface</item>
+        -->
+    </style>
+
+    <!-- Optional: If you use NoActionBar theme and a standalone Toolbar -->
+    <style name="Theme.EAjutor.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+
+</resources>

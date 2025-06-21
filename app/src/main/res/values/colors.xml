@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Your App's Primary Colors -->
+    <color name="colorPrimary">#1976D2</color> <!-- Example: A nice blue -->
+    <color name="colorPrimaryVariant">#004BA0</color> <!-- A darker shade of primary -->
+    <color name="colorPrimaryLight">#63A4FF</color> <!-- A lighter shade of primary -->
+
+    <color name="colorSecondary">#C83200</color> <!-- Example: Amber/Yellow -->
+    <color name="colorSecondaryVariant">#ff8000</color> <!-- Darker Accent -->
+
+    <!-- Your App's Accent Color -->
+    <color name="colorAccent">#FFC107</color> <!-- Example: Amber/Yellow -->
+    <color name="colorAccentVariant">#C79100</color> <!-- Darker Accent -->
+
+    <!-- Standard Colors -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="grey">#808080</color>
+    <color name="light_grey">#D3D3D3</color>
+
+    <!-- Error Colors -->
+    <color name="colorError">#D32F2F</color> <!-- A standard Material Red for errors -->
+    <color name="colorOnError">#FFFFFF</color> <!-- Text on top of colorError -->
+    <color name="colorErrorBackground">#FFCDD2
+    </color> <!-- A light red for error message backgrounds -->
+
+    <!-- Other Semantic Colors (Examples) -->
+    <color name="colorSuccess">#4CAF50</color> <!-- Green for success -->
+    <color name="colorWarning">#FF9800</color> <!-- Orange for warnings -->
+    <color name="colorInfo">#2196F3</color>   <!-- Blue for informational messages -->
+
+    <!-- Specific UI Element Colors (as needed) -->
+    <color name="status_indicator_green">#4CAF50</color>
+    <color name="status_indicator_yellow">#FFEB3B</color>
+    <color name="status_indicator_red">#F44336</color>
+    <color name="grey_medium">a1a1a1</color>
+
+</resources>

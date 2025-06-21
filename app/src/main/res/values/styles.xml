@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="TabTextAppearance" parent="TextAppearance.Design.Tab">
+        <!-- Dimensiunea textului în tab -->
+        <item name="android:textSize">14sp</item>
+        <!-- Fără majuscule forțate -->
+        <item name="android:textAllCaps">false</item>
+        <!-- Font custom (poți înlocui cu alt font din res/font/) -->
+        <item name="android:fontFamily">@font/roboto_mono_thin</item>
+        <!-- Selector de culoare definit mai sus -->
+        <item name="android:textColor">@color/tab_text_selector</item>
+    </style>
+
+    <style name="ShapeAppearance.App.ChatMessage" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="ShapeAppearance.App.ChatMessage.Sent">
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomLeft">16dp</item>
+        <item name="cornerSizeBottomRight">4dp</item> <!-- Less rounded on one bottom corner -->
+    </style>
+
+    <style name="ShapeAppearance.App.ChatMessage.Received">
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomRight">16dp</item>
+        <item name="cornerSizeBottomLeft">4dp</item> <!-- Less rounded on one bottom corner -->
+    </style>
+</resources>

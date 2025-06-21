@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/operator_profile_dashboard"
+        android:icon="@drawable/ic_profile"
+        android:title="@string/title_profile" />
+
+    <item
+        android:id="@+id/operator_navigation_manage_requests"
+        android:icon="@drawable/ic_requests"
+        android:title="@string/requests" />
+
+</menu>

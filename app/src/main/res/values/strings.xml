@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_name">e-Ajutor</string>
+    <string name="title_profile">Profil</string>
+    <string name="add_requests">Cerere noua</string>
+    <string name="see_requests">Cererile mele</string>
+    <string name="requests">Cereri</string>
+    <string name="registration_successful">Inregistrarea a fost efectuată cu succes!</string>
+    <string name="verification_email_sent">Email-ul de verificare a fost trimis.</string>
+    <string name="failed_to_send_verification_email">Email-ul de verificare nu a fost trimis.</string>
+    <string name="no_internet_connection">Fara conexiune la internet.</string>
+    <string name="registration_failed_user_details">Inregistrarea a reutit, dar nu s-a putut obtine detaliile utilizatorului.</string>
+    <string name="failed_to_save_user_details">Failed to save user details: %1$s</string>
+    <string name="failed_to_save_user_details_try_again">Nu s-au salvat detaliile utilizatorului. Vă rog să incercati
+sa va inregistrati din nou.</string>
+    <string name="authentication_failed_generic">Autentificarea a esuat: %1$s</string>
+
+
+    <!-- Input Field Errors -->
+    <string name="error_first_name_required">Prenumele este necesar</string>
+    <string name="error_last_name_required">Numele este necesar</string>
+    <string name="error_phone_required">Numarul de telefon este necesar</string>
+    <string name="error_phone_starts_with_0">Numarul de telefon incepe cu 0</string>
+    <string name="error_phone_10_digits">Numarul de telefon are 10 cifre</string>
+    <string name="error_phone_only_digits">Numarul de telefon contine doar cifre</string>
+    <string name="error_email_required">Adresa de email este necesara</string>
+    <string name="error_invalid_email">Introduceti o adresa valida de email</string>
+    <string name="error_password_required">Parola este necesara</string>
+    <string name="error_password_min_length">Parola trebuie sa contina 6 cifre</string>
+    <string name="error_password_uppercase">Parola trebuie sa contina cel putin un caracter cu majuscule\n</string>
+    <string name="error_password_digit">Parola trebuie sa contina cel putin o cifra</string>
+    <string name="error_password_special_char">Parola trebuie sa contina cel putin un caracter special(!,?...)</string>
+    <string name="error_email_exists">Adresa de email este deja folosita</string>
+    <string name="error_password_weak">Parola este prea slaba %1$s</string>
+    <string name="biometric_login_title">Biometric Login</string>
+    <string name="biometric_login_subtitle">Log in using your biometric credential</string>
+    <!-- Add any other missing string resources that the Logcat might show later -->
+    <string name="email_required">Email address is required</string>
+    <string name="invalid_email_address">Enter a valid email address</string>
+    <string name="password_required">Password is required</string>
+    <string name="email_not_verified_title">Email Not Verified</string>
+    <string name="email_not_verified_message">Your email address has not been verified. Please check your inbox for the verification link. If you don\'t see it, you can resend the email.</string>
+    <string name="resend_email_button">Resend Email</string>
+    <string name="verification_email_sent_success">Verification email sent. Please check your inbox (and spam folder).</string>
+    <string name="verification_email_send_fail">Failed to send verification email</string>
+    <string name="reset_password_title">Reset Password</string>
+    <string name="reset_button_text">Reset</string>
+    <string name="password_reset_email_sent_success">Password reset instructions have been sent to your email.</string>
+    <string name="password_reset_email_send_fail">Could not send password reset request</string>
+
+    <!-- Button Text -->
+    <string name="register">Inregistrare</string>
+
+    <!-- Content Descriptions for ImageButtons (Accessibility) -->
+    <string name="cd_toggle_password_visibility">Vezi parola</string>
+    <string name="password_too_short">Parola este prea scurta</string>
+    <string name="password_requires_uppercase">Parola necesita o litera mare\n</string>
+    <string name="password_requires_digit">Parola necesita o cifra\n</string>
+    <string name="password_requires_special">Parola necesita un caracter special(!?..)\n</string>
+    <string name="first_name_required">Nume obligatoriu!\n</string>
+    <string name="last_name_required">Prenume obligatoriu!\n\n</string>
+    <string name="phone_number_required">Numar de telefon obligatoriu!\n</string>
+    <string name="registration_error_try_again">Eroare de inregistrare. Va rog incercati din nou.\n</string>
+    <string name="registration_successful_verify_email">Înregistrare reușită! Vă rugăm să vă verificați e-mailul pentru a verifica și apoi să vă conectați.</string>
+    <string name="registration_succeeded_details_failed">Înregistrarea a reușit, dar unele detalii nu au putut fi salvate. Vă rugăm să verificați e-mailul și să vă conectați.</string>
+    <string name="email_verification_required_title">Adresa de email trebuie verificata!</string>
+    <string name="email_verification_message_part1">Adresa de email (%1$s) nu este verificata.</string>
+    <string name="email_verification_message_part2">Vă rugăm să verificați căsuța de email-uri.\n</string>
+    <string name="verification_email_sent_toast">A fost trimis un email pentru verificare.\n</string>
+    <string name="failed_to_send_verification_email_toast">Email-ul de verificare nu a putut fi trimis.</string>
+    <string name="please_verify_to_continue_toast">Va rugam verificati adresa de email pentru a continua.\n</string>
+    <string name="later_button">Mai tarziu.\n</string>
+
+
+</resources>

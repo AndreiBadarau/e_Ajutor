@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <ImageView
+        android:id="@+id/imageView_doc_icon_detail"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="12dp"
+        tools:srcCompat="@drawable/ic_document_placeholder" /> <!-- Placeholder icon -->
+
+    <TextView
+        android:id="@+id/textView_doc_name_detail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/imageView_doc_icon_detail"
+        android:layout_toStartOf="@+id/button_download_doc_detail"
+        android:layout_centerVertical="true"
+        android:textAppearance="?attr/textAppearanceBody1"
+        android:layout_marginEnd="12dp"
+        tools:text="Identity Card Scan.pdf" />
+
+    <Button
+        android:id="@+id/button_download_doc_detail"
+        style="@style/Widget.Material3.Button.TextButton.Icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:text="View"
+        app:icon="@drawable/ic_download" /> <!-- Placeholder icon -->
+
+</RelativeLayout>
