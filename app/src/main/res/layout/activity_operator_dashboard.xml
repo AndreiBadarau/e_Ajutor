@@ -1,24 +1,25 @@
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- AppBarLayout and MaterialToolbar REMOVED -->
+    <!--
     <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/activityAppBarLayout"
+        android:id="@+id/activityAppBarLayoutOperator"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/activityToolbar"
+            android:id="@+id/activityToolbarOperator"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
             android:theme="?attr/actionBarTheme"
             app:popupTheme="?attr/actionBarPopupTheme"/>
-        <!-- The title will be set by NavController based on fragment labels -->
-
     </com.google.android.material.appbar.AppBarLayout>
+    -->
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/operator_nav_host_fragment"
@@ -26,15 +27,15 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:defaultNavHost="true"
-        app:layout_constraintTop_toBottomOf="@id/activityAppBarLayout"
         app:layout_constraintBottom_toTopOf="@+id/operatorNavView"
-        app:navGraph="@navigation/operator_nav_graph" /> <!-- Or your_operator_nav_graph -->
+        app:layout_constraintTop_toTopOf="parent"
+        app:navGraph="@navigation/operator_nav_graph" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/operatorNavView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/operator_bottom_nav_menu" /> <!-- Or your_operator_bottom_nav_menu -->
+        app:menu="@menu/operator_bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,8 +6,6 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -40,21 +38,7 @@ class OperatorDashboardActivity : AppCompatActivity() {
             .findFragmentById(R.id.operator_nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        // Leagă BottomNavigationView de NavController
         binding.operatorNavView.setupWithNavController(navController)
-
-        // After binding.navView.setupWithNavController(navController)
-// Setup ActionBar with NavController
-        setSupportActionBar(binding.activityToolbar) // Assuming your Toolbar ID is activityToolbar
-        setupActionBarWithNavController(
-            navController,
-            AppBarConfiguration(navController.graph)
-        ) // Default for top-level
-// For more granular control over which destinations are top-level (no back arrow):
-// val appBarConfiguration = AppBarConfiguration(
-//     setOf(R.id.home_destination, R.id.requests_destination, R.id.profile_destination) // Your top-level fragment IDs
-// )
-// setupActionBarWithNavController(navController, appBarConfiguration)
     }
 
     override fun onSupportNavigateUp(): Boolean {

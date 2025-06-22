@@ -52,6 +52,7 @@
         <activity
             android:name=".activity.OperatorDashboardActivity"
             android:exported="false"
+            android:theme="@style/Theme.EAjutor"
             android:windowSoftInputMode="adjustPan" />
 
 

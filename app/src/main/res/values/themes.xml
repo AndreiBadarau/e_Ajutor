@@ -1,63 +1,56 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-
-
-    <!--        &lt;!&ndash; Important: nu activa transparent system bars &ndash;&gt;-->
-    <!--        <item name="android:windowTranslucentNavigation">false</item>-->
-    <!--        <item name="android:windowTranslucentStatus">false</item>-->
-    <!--        <item name="android:windowDrawsSystemBarBackgrounds">true</item>-->
-    <!--        <item name="android:windowIsTranslucent">false</item>-->
-    <!--        <item name="android:windowSoftInputMode">adjustResize</item>-->
-
-    <!-- Base application theme. -->
-    <style name="Theme.EAjutor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
+    <!-- Base application theme (Light mode) -->
+    <style name="Theme.EAjutor" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Primary brand color -->
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
-        <item name="colorOnPrimary">@color/white</item> <!-- Text/icons on primary color -->
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/colorSecondary</item> <!-- Often same as accent -->
-        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
-        <item name="colorOnSecondary">@color/black</item> <!-- Text/icons on secondary color -->
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item> <!-- Consider mapping to colorPrimaryContainer or similar M3 role -->
+        <item name="colorOnPrimary">@color/black</item>
 
-        <!-- Define error colors -->
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item> <!-- Consider mapping to colorSecondaryContainer -->
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Error colors -->
         <item name="colorError">@color/colorError</item>
-        <item name="colorOnError">@color/white</item> <!-- Text/icons on error color -->
+        <item name="colorOnError">@color/white</item>
         <item name="colorErrorContainer">@color/colorErrorBackground</item>
         <item name="colorOnErrorContainer">@color/colorError</item>
 
-        <!-- Other theme attributes -->
+        <!-- Status bar color -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+
+        <!-- Define action bar theme attributes for the main theme -->
+        <!-- This will be inherited by Toolbars unless they specify their own android:theme -->
+        <item name="actionBarTheme">@style/Theme.EAjutor.AppBarOverlay</item>
+        <item name="actionBarPopupTheme">@style/Theme.EAjutor.PopupOverlay</item>
+
     </style>
 
     <!-- AppBarOverlay: Used for the AppBar/Toolbar itself -->
-    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
-        <!--
-            If your Toolbar background (colorPrimary) is dark, use Dark.ActionBar.
-            This makes Toolbar title text and icons light (e.g., white).
-            If your Toolbar background is light, you might use ThemeOverlay.MaterialComponents.Light.ActionBar
-            or customize text colors directly.
-        -->
+    <!-- Option 1: If your Toolbar background (colorPrimary) is DARK -->
+    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <!-- This ensures text/icons on the Toolbar are light (e.g., white) -->
+        <!-- You can further customize Toolbar text appearance here if needed -->
+        <!-- <item name="android:textColorPrimary">@color/white</item> -->
     </style>
+
+    <!-- Option 2: If your Toolbar background (colorPrimary) is LIGHT -->
+    <!--
+    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.Material3.Light.ActionBar">
+    -->
+    <!-- This ensures text/icons on the Toolbar are dark -->
+    <!--
+    </style>
+    -->
 
     <!-- PopupOverlay: Used for the Toolbar's overflow popup menu -->
-    <style name="Theme.EAjutor.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light">
-        <!--
-            This makes the background of the popup menu light and the text dark.
-            You can customize itemBackground, itemTextColor etc. here if needed.
-        -->
-        <!-- Example:
-        <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="android:background">?attr/colorSurface</item>
-        -->
-    </style>
+    <style name="Theme.EAjutor.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
+    <!-- This makes the background of the popup menu light and the text dark. -->
 
-    <!-- Optional: If you use NoActionBar theme and a standalone Toolbar -->
-    <style name="Theme.EAjutor.NoActionBar">
+    <!-- This style is redundant if Theme.EAjutor is always your app theme and is NoActionBar -->
+    <!-- <style name="Theme.EAjutor.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-    </style>
-
-
+    </style> -->
 </resources>
