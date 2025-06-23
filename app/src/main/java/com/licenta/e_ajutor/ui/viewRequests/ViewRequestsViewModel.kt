@@ -22,7 +22,7 @@ class ViewRequestsViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val TAG = "ViewRequestsViewModel"
+    private val tag = "ViewRequestsViewModel"
 
     // LiveData for User Role
     private val _userRole = MutableLiveData<UserRole>(UserRole.UNKNOWN)
@@ -78,19 +78,19 @@ class ViewRequestsViewModel : ViewModel() {
                     "user" -> UserRole.USER
                     "operator" -> UserRole.OPERATOR
                     else -> {
-                        Log.w(TAG, "User role not found or unrecognized: $roleString for UID: $userId")
+                        Log.w(tag, "User role not found or unrecognized: $roleString for UID: $userId")
                         UserRole.UNKNOWN // Fallback to UNKNOWN if role is missing or invalid
                     }
                 }
                 _userRole.value = determinedRole
-                Log.d(TAG, "User role determined: $determinedRole")
+                Log.d(tag, "User role determined: $determinedRole")
                 // Apply a default filter after role is determined.
                 // For Operators, default to "PENDING", for Users, default to "ALL".
                 val initialFilter = if (determinedRole == UserRole.OPERATOR) "PENDING" else "ALL"
                 updateQueryBasedOnRoleAndFilter(determinedRole, initialFilter)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error fetching user role for UID: $userId", e)
+                Log.e(tag, "Error fetching user role for UID: $userId", e)
                 _userRole.value = UserRole.UNKNOWN
                 _toastMessage.value = "Error determining user role: ${e.message}"
                 // Still attempt to update query with UNKNOWN role to show nothing or an error state
@@ -111,13 +111,13 @@ class ViewRequestsViewModel : ViewModel() {
     private fun updateQueryBasedOnRoleAndFilter(role: UserRole, filterStatus: String) {
         val currentUserId = auth.currentUser?.uid
         if (currentUserId == null && role != UserRole.UNKNOWN) {
-            Log.e(TAG, "Cannot update query: User not logged in, but role is not UNKNOWN.")
+            Log.e(tag, "Cannot update query: User not logged in, but role is not UNKNOWN.")
             _requestsQuery.value = db.collection("requests").whereEqualTo("userId", "INVALID_NO_USER") // Empty query
             return
         }
 
         var query: Query = db.collection("requests")
-        Log.d(TAG, "Updating query for role: $role, filter: $filterStatus, UserID: $currentUserId")
+        Log.d(tag, "Updating query for role: $role, filter: $filterStatus, UserID: $currentUserId")
 
         when (role) {
             UserRole.USER -> {
@@ -136,7 +136,7 @@ class ViewRequestsViewModel : ViewModel() {
                 // This part depends heavily on your application's business logic for operators.
             }
             UserRole.UNKNOWN -> {
-                Log.w(TAG, "User role is UNKNOWN. Query will yield no results.")
+                Log.w(tag, "User role is UNKNOWN. Query will yield no results.")
                 // Create a query that intentionally returns no results
                 _requestsQuery.value = query.whereEqualTo("userId", "NON_EXISTENT_USER_FOR_UNKNOWN_ROLE")
                 return
@@ -150,9 +150,10 @@ class ViewRequestsViewModel : ViewModel() {
 
         // Always order by timestamp descending to show newest first
         _requestsQuery.value = query.orderBy("timestamp", Query.Direction.DESCENDING)
-        Log.d(TAG, "New Firestore query set for requests list.")
+        Log.d(tag, "New Firestore query set for requests list.")
     }
 
+    @Suppress("DEPRECATION")
     fun loadRequestDetails(requestId: String) {
         if (requestId.isBlank()) {
             _toastMessage.value = "Invalid Request ID."
@@ -171,14 +172,14 @@ class ViewRequestsViewModel : ViewModel() {
                     _chatMessagesQuery.value = db.collection("requests").document(requestId)
                         .collection("chat")
                         .orderBy("timestamp", Query.Direction.ASCENDING)
-                    Log.d(TAG, "Details loaded for $requestId. Chat query set.")
+                    Log.d(tag, "Details loaded for $requestId. Chat query set.")
                 } else {
                     _toastMessage.value = "Request details not found."
                     _chatMessagesQuery.value = null
-                    Log.w(TAG, "Request document $requestId not found or failed to parse.")
+                    Log.w(tag, "Request document $requestId not found or failed to parse.")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading request details for $requestId", e)
+                Log.e(tag, "Error loading request details for $requestId", e)
                 _toastMessage.value = "Error loading details: ${e.message}"
                 _selectedRequest.value = null
                 _chatMessagesQuery.value = null
@@ -191,7 +192,7 @@ class ViewRequestsViewModel : ViewModel() {
     fun clearSelectedRequest() {
         _selectedRequest.value = null
         _chatMessagesQuery.value = null
-        Log.d(TAG, "Selected request and chat query cleared.")
+        Log.d(tag, "Selected request and chat query cleared.")
     }
 
     fun sendChatMessage(requestId: String, messageText: String) {
@@ -214,11 +215,11 @@ class ViewRequestsViewModel : ViewModel() {
         db.collection("requests").document(requestId).collection("chat")
             .add(chatMessage)
             .addOnSuccessListener {
-                Log.d(TAG, "Message sent successfully to request $requestId")
+                Log.d(tag, "Message sent successfully to request $requestId")
                 // The UI will update automatically due to FirestoreRecyclerAdapter listening to the query
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error sending message to request $requestId", e)
+                Log.e(tag, "Error sending message to request $requestId", e)
                 _toastMessage.value = "Error sending message: ${e.message}"
             }
     }
@@ -239,11 +240,11 @@ class ViewRequestsViewModel : ViewModel() {
                 _toastMessage.value = "Request approved."
                 _operatorActionSuccess.value = true
                 loadRequestDetails(requestId) // Refresh details view
-                Log.d(TAG, "Request $requestId approved.")
+                Log.d(tag, "Request $requestId approved.")
             }
             .addOnFailureListener { e ->
                 _toastMessage.value = "Error approving request: ${e.message}"
-                Log.e(TAG, "Error approving request $requestId", e)
+                Log.e(tag, "Error approving request $requestId", e)
             }
             .addOnCompleteListener {
                 _isLoading.value = false
@@ -271,11 +272,11 @@ class ViewRequestsViewModel : ViewModel() {
                 _toastMessage.value = "Request rejected."
                 _operatorActionSuccess.value = true
                 loadRequestDetails(requestId) // Refresh details view
-                Log.d(TAG, "Request $requestId rejected with reason: $reason")
+                Log.d(tag, "Request $requestId rejected with reason: $reason")
             }
             .addOnFailureListener { e ->
                 _toastMessage.value = "Error rejecting request: ${e.message}"
-                Log.e(TAG, "Error rejecting request $requestId", e)
+                Log.e(tag, "Error rejecting request $requestId", e)
             }
             .addOnCompleteListener {
                 _isLoading.value = false

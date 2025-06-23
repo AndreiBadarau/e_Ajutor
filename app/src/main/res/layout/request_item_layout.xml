@@ -38,7 +38,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             tools:srcCompat="@drawable/ic_benefit_placeholder"
-            android:contentDescription="Benefit Type Icon" />
+            android:contentDescription="@string/benefit_type_icon" />
 
         <!-- Benefit Type -->
         <TextView

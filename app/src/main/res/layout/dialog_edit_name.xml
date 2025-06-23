@@ -9,7 +9,7 @@
         android:id="@+id/editTextNewFirstName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Noul Nume"
+        android:hint="@string/noul_nume"
         android:importantForAutofill="no"
         android:inputType="textPersonName|textCapWords" />
 
@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="Noul Prenume"
+        android:hint="@string/noul_prenume"
         android:importantForAutofill="no"
         android:inputType="textPersonName|textCapWords" />
 

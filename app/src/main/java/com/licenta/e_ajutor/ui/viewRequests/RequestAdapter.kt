@@ -27,7 +27,7 @@ class RequestAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RequestViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.request_item_layout, parent, false) // Ensure you have this layout file
+            .inflate(R.layout.request_item_layout, parent, false)
         return RequestViewHolder(view)
     }
 
@@ -94,9 +94,6 @@ class RequestAdapter(
         }
     }
 
-    // You might want to override onDataChanged or getItemCount for empty list handling
-    // in the Fragment, though FirestoreRecyclerAdapter handles some of this.
-    // For example, to show/hide an "empty list" TextView in your Fragment:
     override fun onDataChanged() {
         super.onDataChanged()
         // The fragment can observe this or use adapter.itemCount directly

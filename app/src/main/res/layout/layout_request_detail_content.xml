@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     tools:context=".ui.viewRequests.ViewRequestsFragment">
-    <!-- tools:visibility="gone" --> <!-- Set initial visibility in Fragment -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,7 +19,7 @@
             android:background="?attr/colorPrimary"
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationIconTint="?attr/colorOnPrimary"
-            app:title="Request Details"
+            app:title="Detalii cerere"
             app:titleTextColor="?attr/colorOnPrimary" />
 
         <ProgressBar
@@ -55,7 +54,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Status: "
+                    android:text="@string/status"
                     android:textStyle="bold" />
 
                 <TextView
@@ -104,7 +103,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Rejection Reason:"
+                        android:text="@string/rejection_reason"
                         android:textColor="?attr/colorError"
                         android:textStyle="bold" />
 
@@ -129,7 +128,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Uploaded Documents"
+                android:text="@string/uploaded_documents"
+                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <LinearLayout
@@ -153,7 +153,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Financial Information"
+                android:textStyle="bold"
+                android:text="@string/financial_information"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <TextView
@@ -167,7 +168,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Additional Notes from User"
+                android:textStyle="bold"
+                android:text="@string/additional_notes_from_user"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <TextView
@@ -195,7 +197,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="Approve"
+                    android:text="@string/approve"
                     app:icon="@drawable/ic_approve" />
 
                 <Button
@@ -205,7 +207,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="?attr/colorError"
-                    android:text="Reject"
+                    android:text="@string/reject"
                     app:icon="@drawable/ic_reject" />
             </LinearLayout>
 
@@ -216,7 +218,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:hint="Rejection Reason"
+                android:hint="@string/rejection_reason"
                 android:visibility="gone"
                 tools:visibility="visible">
 
@@ -235,7 +237,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginTop="8dp"
-                android:text="Submit Rejection"
+                android:text="@string/submit_rejection"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
@@ -252,7 +254,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Chat"
+                android:text="@string/chat"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -277,7 +279,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/chat_input_background"
-                    android:hint="Type a message..."
+                    android:hint="@string/type_a_message"
                     android:imeOptions="actionSend"
                     android:inputType="textCapSentences|textMultiLine"
                     android:maxLines="4"
@@ -288,7 +290,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:contentDescription="Send Message"
+                    android:contentDescription="@string/send_message"
                     android:src="@drawable/ic_send"
                     app:elevation="2dp"
                     app:fabSize="mini" />

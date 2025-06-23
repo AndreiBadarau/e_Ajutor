@@ -14,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_back"
-            app:title="Request Details" />
+            app:title="Detalii cerere" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -81,7 +81,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Rejection Reason:"
+                        android:text="@string/rejection_reason"
                         android:textColor="?attr/colorOnError"
                         android:textStyle="bold" />
 
@@ -106,7 +106,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Uploaded Documents"
+                android:text="@string/uploaded_documents"
+                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <LinearLayout
@@ -145,7 +146,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
-                        android:text="Download"
+                        android:text="@string/download"
                         app:icon="@drawable/ic_download" />
                 </RelativeLayout>
             </LinearLayout>
@@ -161,7 +162,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Financial Information"
+                android:text="@string/financial_information"
+                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <TextView
@@ -175,7 +177,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Additional Notes from User"
+                android:text="@string/additional_notes_from_user"
+                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <TextView
@@ -203,7 +206,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="Approve"
+                    android:text="@string/approve"
                     app:icon="@drawable/ic_approve" />
 
                 <Button
@@ -212,7 +215,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="@color/colorError"
-                    android:text="Reject"
+                    android:text="@string/reject"
                     app:icon="@drawable/ic_reject" />
             </LinearLayout>
 
@@ -223,7 +226,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:hint="Rejection Reason"
+                android:hint="@string/rejection_reason"
                 android:visibility="gone"
                 tools:visibility="visible">
 
@@ -242,7 +245,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginTop="8dp"
-                android:text="Submit Rejection"
+                android:text="@string/submit_rejection"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
@@ -259,7 +262,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Chat"
+                android:text="@string/chat"
                 android:textAppearance="?attr/textAppearanceSubtitle1" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -286,7 +289,7 @@
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/chat_input_background"
-                    android:hint="Type a message..."
+                    android:hint="@string/type_a_message"
                     android:inputType="textShortMessage|textCapSentences"
                     android:padding="12dp" />
 
@@ -294,7 +297,7 @@
                     android:id="@+id/fab_send_chat_message"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:contentDescription="Send Message"
+                    android:contentDescription="@string/send_message"
                     android:src="@drawable/ic_send"
                     app:fabSize="mini" />
             </LinearLayout>

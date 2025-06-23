@@ -18,7 +18,7 @@ class OperatorDashboardActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOperatorDashboardBinding
     private lateinit var auth: FirebaseAuth
     private lateinit var navController: NavController
-    private val TAG = "OperatorDashboardActivity"
+    private val tag = "OperatorDashboardActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +28,7 @@ class OperatorDashboardActivity : AppCompatActivity() {
         auth = Firebase.auth
 
         if (auth.currentUser == null) {
-            Log.w(TAG, "User is null in MainActivity, redirecting to LoginActivity.")
+            Log.w(tag, "User is null in MainActivity, redirecting to LoginActivity.")
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return

@@ -3,7 +3,6 @@ package com.licenta.e_ajutor.activity // Assuming your package name
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -27,7 +26,7 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
 
-    private val TAG = "RegisterActivity"
+    private val tag = "RegisterActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,9 +43,9 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         binding.textViewGoToLogin.setOnClickListener {
-            Log.d(TAG, "Go to LoginActivity clicked")
+            Log.d(tag, "Go to LoginActivity clicked")
             startActivity(Intent(this, LoginActivity::class.java))
-            // finish() // Optional: finish RegisterActivity
+            finish()
         }
     }
 
@@ -89,20 +88,13 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+            else -> false
         }
     }
 
@@ -200,10 +192,10 @@ class RegisterActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { creationTask ->
                 if (creationTask.isSuccessful) {
-                    Log.d(TAG, "createUserWithEmail:success")
+                    Log.d(tag, "createUserWithEmail:success")
                     val firebaseUser: FirebaseUser? = auth.currentUser
                     if (firebaseUser == null) {
-                        Log.e(TAG, "User creation successful but FirebaseUser is null.")
+                        Log.e(tag, "User creation successful but FirebaseUser is null.")
                         Toast.makeText(
                             baseContext,
                             getString(R.string.registration_error_try_again),
@@ -218,10 +210,10 @@ class RegisterActivity : AppCompatActivity() {
                     firebaseUser.sendEmailVerification()
                         .addOnCompleteListener { verificationTask ->
                             if (verificationTask.isSuccessful) {
-                                Log.d(TAG, "Verification email sent to ${firebaseUser.email}")
+                                Log.d(tag, "Verification email sent to ${firebaseUser.email}")
                             } else {
                                 Log.w(
-                                    TAG,
+                                    tag,
                                     "Failed to send verification email.",
                                     verificationTask.exception
                                 )
@@ -237,10 +229,10 @@ class RegisterActivity : AppCompatActivity() {
                             )
                         }
                 } else {
-                    Log.w(TAG, "createUserWithEmail:failure", creationTask.exception)
+                    Log.w(tag, "createUserWithEmail:failure", creationTask.exception)
                     Toast.makeText(
                         baseContext,
-                        "Registration failed: ${creationTask.exception?.message}",
+                        "Înregistrarea a eșuat: ${creationTask.exception?.message}",
                         Toast.LENGTH_LONG
                     ).show() // Use string resource
                     binding.progressBarRegister.visibility = View.GONE
@@ -271,7 +263,7 @@ class RegisterActivity : AppCompatActivity() {
             .set(user)
             .addOnSuccessListener {
                 Log.d(
-                    TAG,
+                    tag,
                     "DocumentSnapshot successfully written for user $userId with role 'user'!"
                 )
                 Toast.makeText(
@@ -282,10 +274,7 @@ class RegisterActivity : AppCompatActivity() {
                 proceedToLogin()
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "Error writing document for user $userId", e)
-                // Even if Firestore write fails, the user is created in Auth.
-                // They will need to verify email and log in.
-                // Consider how to handle this - maybe retry Firestore write on login, or log this for manual check.
+                Log.w(tag, "Error writing document for user $userId", e)
                 Toast.makeText(
                     baseContext,
                     getString(R.string.registration_succeeded_details_failed),
@@ -296,19 +285,12 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun proceedToLogin() {
-        auth.signOut() // IMPORTANT: Sign out the user before redirecting to LoginActivity
-        // This ensures they have to log in properly and their token (with potential claims)
-        // is fetched correctly by LoginActivity.
-        Log.d(TAG, "User signed out. Proceeding to LoginActivity.")
+        auth.signOut()
+        Log.d(tag, "User signed out. Proceeding to LoginActivity.")
 
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
-        finish() // Finish RegisterActivity
+        finish()
     }
-
-    // No need to check currentUser in onStart for RegisterActivity
-    // public override fun onStart() {
-    // super.onStart()
-    // }
 }

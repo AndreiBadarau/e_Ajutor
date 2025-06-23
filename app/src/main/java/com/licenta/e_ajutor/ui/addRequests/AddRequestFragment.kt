@@ -3,6 +3,11 @@ package com.licenta.e_ajutor.ui.addRequests
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +18,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.licenta.e_ajutor.R
@@ -30,7 +36,6 @@ class AddRequestFragment : Fragment() {
     private lateinit var documentPickerLauncher: ActivityResultLauncher<Intent>
     private var pendingDocIdForUpload: String? = null // To store which doc is being picked
 
-    // Map to hold dynamically created checkboxes for UI updates
     private val checkboxMapUi = mutableMapOf<String, CheckBox>()
 
     override fun onCreateView(
@@ -44,9 +49,56 @@ class AddRequestFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupGdprLink()
         setupDocumentPickerLauncher()
         setupClickListeners()
         observeViewModel()
+    }
+
+    private fun setupGdprLink() {
+        val gdprCheckbox = binding.gdprCheckbox
+        val fullText = getString(R.string.gdpr_checkbox_text)
+        val linkText = "(GDPR)"
+        val gdprUrl = "https://www.dataprotection.ro/?page=noua%20_pagina_regulamentul_GDPR"
+
+        val spannableString = SpannableString(fullText)
+
+        val clickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                // Open the GDPR URL in a browser
+                val intent = Intent(Intent.ACTION_VIEW, gdprUrl.toUri())
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    // Handle case where no browser is available or URL is invalid
+                    Toast.makeText(requireContext(), "Link-ul nu a putut fi deschis.", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                // Style the link (optional)
+                ds.isUnderlineText = true // Add underline
+                // You can also set ds.linkColor here if not using theme's default
+                // ds.color = ContextCompat.getColor(requireContext(), R.color.your_link_color)
+            }
+        }
+
+        val startIndex = fullText.indexOf(linkText)
+        if (startIndex != -1) { // Check if the linkText was found
+            val endIndex = startIndex + linkText.length
+            spannableString.setSpan(
+                clickableSpan,
+                startIndex,
+                endIndex,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            gdprCheckbox.text = spannableString
+            gdprCheckbox.movementMethod = LinkMovementMethod.getInstance() // **Crucial for making links clickable**
+        } else {
+            // Log or handle the case where "(GDPR)" isn't found in your string
+            // This might happen if the text changes or is translated without the keyword.
+        }
     }
 
     private fun setupDocumentPickerLauncher() {
@@ -60,9 +112,9 @@ class AddRequestFragment : Fragment() {
                     }
                 }
             } else {
-                Toast.makeText(context, "No file selected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Nu există niciun fișier selectat", Toast.LENGTH_SHORT).show()
             }
-            pendingDocIdForUpload = null // Reset pending doc ID
+            pendingDocIdForUpload = null
         }
     }
 
@@ -74,7 +126,7 @@ class AddRequestFragment : Fragment() {
         binding.submitRequestButton.setOnClickListener {
             val selectedBenefit = viewModel.selectedBenefitType.value
             if (selectedBenefit == null) {
-                Toast.makeText(requireContext(), "Please select a benefit type.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Vă rugăm să selectați un tip de beneficii.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -95,7 +147,7 @@ class AddRequestFragment : Fragment() {
         val docIds = requiredDocs.map { it.id }.toTypedArray()
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Select Document to Upload/Manage")
+            .setTitle("Selectați document pentru a Încărca/Gestiona")
             .setItems(docDisplayNames) { _, which ->
                 val selectedDocId = docIds[which]
                 val selectedDocDisplayName = docDisplayNames[which] // For prompts
@@ -103,27 +155,26 @@ class AddRequestFragment : Fragment() {
                 // Check if this document is already uploaded
                 if (viewModel.uploadedDocuments.value?.containsKey(selectedDocId) == true) {
                     AlertDialog.Builder(requireContext())
-                        .setTitle("Manage '${selectedDocDisplayName}'")
-                        .setMessage("This document is already uploaded. What would you like to do?")
-                        .setPositiveButton("Replace") { _, _ ->
+                        .setTitle("Gestionează '${selectedDocDisplayName}'")
+                        .setMessage("Acest document este deja încărcat. Ce ai vrea să faci?")
+                        .setPositiveButton("Înlocuire") { _, _ ->
                             pendingDocIdForUpload = selectedDocId
                             launchFilePicker()
                         }
-                        .setNegativeButton("Delete") { _, _ ->
+                        .setNegativeButton("Şterge") { _, _ ->
                             viewModel.deleteDocument(selectedDocId) {
                                 // Optional: Could add a small delay or visual cue before picker if needed
                                 // For now, no action needed here as LiveData will update UI
                             }
                         }
-                        .setNeutralButton("Cancel", null)
+                        .setNeutralButton("Anulează", null)
                         .show()
                 } else {
-                    // Not uploaded, so prompt to upload
                     pendingDocIdForUpload = selectedDocId
                     launchFilePicker()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Anulează", null)
             .show()
     }
 
@@ -177,7 +228,8 @@ class AddRequestFragment : Fragment() {
 
         viewModel.selectedBenefitType.observe(viewLifecycleOwner) { benefitType ->
             benefitType?.let {
-                binding.benefitDescription.text = "Please upload all required documents for ${it.name}."
+                binding.benefitDescription.text =
+                    getString(R.string.please_upload_all_required_documents_for, it.name)
                 // THIS CALL IS GOOD HERE to build the initial list of checkboxes
                 updateRequiredDocsUI(it) // Renamed for clarity
                 // Clear other fields when benefit type changes
@@ -185,7 +237,8 @@ class AddRequestFragment : Fragment() {
                 binding.extraInfoEditText.setText("")
                 binding.gdprCheckbox.isChecked = false
             } ?: run {
-                binding.benefitDescription.text = "Select a benefit type to see requirements."
+                binding.benefitDescription.text =
+                    getString(R.string.select_a_benefit_type_to_see_requirements)
                 binding.requiredDocsContainer.removeAllViews()
                 checkboxMapUi.clear()
             }
@@ -202,16 +255,19 @@ class AddRequestFragment : Fragment() {
             if (currentBenefit != null) {
                 val totalRequired = currentBenefit.requiredDocuments.size
                 val uploadedCount = uploadedDocsMap.size
-                binding.uploadStatusText.text = "Uploaded $uploadedCount of $totalRequired documents."
+                binding.uploadStatusText.text =
+                    getString(R.string.uploaded_of_documents, uploadedCount, totalRequired)
                 // If all are uploaded, you could change the text to "All documents uploaded."
                 // and maybe even change the button text or disable it.
                 if (uploadedCount == totalRequired && totalRequired > 0) {
-                    binding.uploadStatusText.text = "All required documents uploaded."
+                    binding.uploadStatusText.text =
+                        getString(R.string.all_required_documents_uploaded)
                 } else if (totalRequired == 0) {
-                    binding.uploadStatusText.text = "No documents required for this benefit type."
+                    binding.uploadStatusText.text =
+                        getString(R.string.no_documents_required_for_this_benefit_type)
                 }
             } else {
-                binding.uploadStatusText.text = "Select a benefit type."
+                binding.uploadStatusText.text = getString(R.string.select_a_benefit_type)
             }
         }
 

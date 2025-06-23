@@ -1,4 +1,4 @@
-package com.licenta.e_ajutor
+package com.licenta.e_ajutor.ui.profile
 
 import BiometricCryptographyManager
 import android.annotation.SuppressLint
@@ -42,6 +42,13 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.licenta.e_ajutor.PREFS_NAME
+import com.licenta.e_ajutor.PREF_IS_BIOMETRIC_ENABLED_PREFIX
+import com.licenta.e_ajutor.PREF_KEY_BIOMETRIC_KEY_ALIAS_PREFIX
+import com.licenta.e_ajutor.PREF_LAST_LOGGED_IN_UID
+import com.licenta.e_ajutor.PREF_USERDATA_ENCRYPTED_DATA_PREFIX
+import com.licenta.e_ajutor.PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX
+import com.licenta.e_ajutor.R
 import com.licenta.e_ajutor.activity.LoginActivity
 import com.licenta.e_ajutor.activity.MfaSetupActivity
 import com.licenta.e_ajutor.databinding.FragmentProfileBinding
@@ -59,7 +66,8 @@ class ProfileFragment : Fragment() {
     private lateinit var placesClient: PlacesClient
     private var autocompleteSessionToken: AutocompleteSessionToken? = null
     private lateinit var addressSuggestionsAdapter: ArrayAdapter<String>
-    private val addressSuggestionDetails = mutableListOf<AutocompletePrediction>() // To store Place IDs or full predictions
+    private val addressSuggestionDetails =
+        mutableListOf<AutocompletePrediction>() // To store Place IDs or full predictions
 
 
     private lateinit var auth: FirebaseAuth
@@ -110,30 +118,25 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (!Places.isInitialized()) {
-            Log.e(TAG, "Places SDK not initialized! Make sure to initialize it in your Application class or an Activity.")
-            // You might want to disable address input features if Places isn't initialized.
-            // For now, we'll proceed assuming it will be.
-            // Consider adding a fallback or error message if it's critical.
-            // A robust way: initialize in Application class, then get client here.
-            // For demo:
-            // Places.initialize(requireContext().applicationContext, "YOUR_API_KEY_HERE_IF_NOT_IN_APP_CLASS")
+            Log.e(
+                TAG,
+                "Places SDK not initialized! Make sure to initialize it in your Application class or an Activity."
+            )
+
         }
         placesClient = Places.createClient(requireContext())
-        autocompleteSessionToken = AutocompleteSessionToken.newInstance() // Create a new token for each session
-
-        // Setup for Operator Address Autocomplete
+        autocompleteSessionToken = AutocompleteSessionToken.newInstance()
         setupAddressAutocomplete(
-            binding.editTextOperatorAddress // Assuming this is an AutoCompleteTextView now
+            binding.editTextOperatorAddress
         )
 
         setupAddressAutocomplete(
             binding.editTextUserAddress
         )
 
-        // auth and db are already initialized in onCreate
         executor = ContextCompat.getMainExecutor(requireContext())
 
-        loadUserProfileAndSetRoleUI() // This function will now handle fetching profile and setting UI based on role
+        loadUserProfileAndSetRoleUI()
         updateBiometricSwitchState()
 
         binding.switchBiometricLogin.setOnCheckedChangeListener { _, isChecked ->
@@ -149,7 +152,7 @@ class ProfileFragment : Fragment() {
 
 
         binding.buttonSaveOperatorLocation.setOnClickListener {
-            if (currentUserIsOperator) { // Check the flag set by loadUserProfileAndSetRoleUI
+            if (currentUserIsOperator) {
                 handleSaveOperatorLocation()
             } else {
                 Log.d(
@@ -157,16 +160,6 @@ class ProfileFragment : Fragment() {
                     "Save Operator Location button clicked by non-operator or role not yet determined."
                 )
             }
-        }
-
-        binding.buttonUseCurrentGpsForOperator.setOnClickListener {
-            if (currentUserIsOperator) {
-                currentLocationFetchPurpose = LocationFetchPurpose.OPERATOR_SERVICE_AREA
-                checkLocationPermissionAndFetch() // This will eventually call fetchLastLocation or fetchCurrentLocationOnce
-            } else {
-                Log.d(TAG, "Use GPS button clicked by non-operator")
-            }
-
         }
 
         binding.buttonSaveUserAddress.setOnClickListener {
@@ -182,16 +175,11 @@ class ProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // If the user navigates away and comes back, or if biometric settings change outside,
-        // it's good to refresh the biometric switch.
-        // Role UI should be relatively static once set, but consider if it needs refresh here.
         updateBiometricSwitchState()
-        // Optionally, re-check role if it can change dynamically without fragment recreation,
-        // but typically it's set on creation/login.
-        // loadUserProfileAndSetRoleUI() // Might be redundant if role doesn't change often while fragment is visible
     }
 
-    private fun handleSaveUserResidentialAddress(){
+    @Suppress("DEPRECATION")
+    private fun handleSaveUserResidentialAddress() {
         val addressText = binding.editTextUserAddress.text.toString().trim()
         if (addressText.isEmpty()) {
             binding.textInputLayoutUserAddress.error = "Adresa nu poate fi goala."
@@ -204,14 +192,12 @@ class ProfileFragment : Fragment() {
         val user = auth.currentUser
 
         if (user == null) {
-            Toast.makeText(requireContext(), "User not logged in.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Utilizator nu e conectat.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Show loading state
         binding.buttonSaveUserAddress.isEnabled = false
         binding.editTextUserAddress.isEnabled = false
-        // Consider adding a ProgressBar: binding.yourProgressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
             try {
@@ -221,44 +207,60 @@ class ProfileFragment : Fragment() {
 
                 withContext(Dispatchers.Main) {
                     if (!addresses.isNullOrEmpty()) {
-                        val location    = addresses[0]
-                        val latitude    = location.latitude
-                        val longitude   = location.longitude
-                        val geoPoint    = GeoPoint(latitude, longitude)
+                        val location = addresses[0]
+                        val latitude = location.latitude
+                        val longitude = location.longitude
+                        val geoPoint = GeoPoint(latitude, longitude)
 
                         // Extragem county, city
-                        val county      = location.adminArea     ?: ""
-                        val city        = location.locality     ?: ""
+                        val county = location.adminArea ?: ""
+                        val city = location.locality ?: ""
 
                         // Pregătim harta de update
                         val updates = mapOf(
                             "homeLocation" to geoPoint,
-                            "county"       to county,
-                            "city"         to city
+                            "county" to county,
+                            "city" to city
                         )
 
                         db.collection("users").document(user.uid)
                             .update(updates)
                             .addOnSuccessListener {
-                                Toast.makeText(requireContext(), "Locație utilizator salvată!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Locație utilizator salvată!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 binding.textViewCurrentUserLocation.text =
-                                    "Home: $county, $city"
+                                    getString(R.string.home, county, city)
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(requireContext(), "Eroare la salvare: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Eroare la salvare: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                     } else {
-                        Toast.makeText(requireContext(), "Adresa nu a putut fi găsită.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Adresa nu a putut fi găsită.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Eroare geocoding: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Eroare geocoding: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             } finally {
                 withContext(Dispatchers.Main) {
                     binding.buttonSaveUserAddress.isEnabled = true
-                    binding.editTextUserAddress.isEnabled   = true
+                    binding.editTextUserAddress.isEnabled = true
                 }
             }
         }
@@ -281,20 +283,17 @@ class ProfileFragment : Fragment() {
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     Log.d(TAG, "User document found in Firestore.")
-                    // Assuming you have separate firstName and lastName fields in Firestore
-                    // and corresponding TextViews (textViewFirstName, textViewLastName) in your layout
+
                     val firstName = document.getString("firstName") ?: ""
                     val lastName = document.getString("lastName") ?: ""
+                    val phoneNumber = document.getString("phone") ?: ""
 
-                    // If you only have one TextView for the full name like "textViewProfileName"
-                    // val fullName = document.getString("name") ?: user.displayName ?: "N/A"
-                    // binding.textViewProfileName.text = fullName
-
-                    // Update this based on your actual layout xml
                     binding.textViewFirstName.text =
-                        firstName // Example: if you have textViewFirstName
+                        firstName
                     binding.textViewLastName.text =
-                        lastName   // Example: if you have textViewLastName
+                        lastName
+                    binding.textViewPhone.text =
+                        phoneNumber
 
                     val userRole = document.getString("role")
                     val isOperator = userRole == "operator"
@@ -331,7 +330,7 @@ class ProfileFragment : Fragment() {
                 binding.operatorLocationSection.visibility = View.GONE
                 binding.userAddressSection.visibility =
                     View.VISIBLE // Default to user view on error
-                Toast.makeText(context, "Failed to load profile.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Nu a reușit să încarce profilul.", Toast.LENGTH_SHORT).show()
                 // Set name/email from auth object as fallback
                 binding.textViewFirstName.text = user.displayName ?: "User"
                 binding.textViewLastName.text = ""
@@ -341,7 +340,11 @@ class ProfileFragment : Fragment() {
     private fun setupAddressAutocomplete(
         autoCompleteTextView: MaterialAutoCompleteTextView // Or AutoCompleteTextView
     ) {
-        addressSuggestionsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, mutableListOf<String>())
+        addressSuggestionsAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            mutableListOf<String>()
+        )
         autoCompleteTextView.setAdapter(addressSuggestionsAdapter)
         autoCompleteTextView.threshold = 1 // Start suggesting after 1 character
 
@@ -355,6 +358,7 @@ class ProfileFragment : Fragment() {
                 }
                 fetchAddressPredictions(s.toString())
             }
+
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString()
                 Log.d(TAG, "Operator afterTextChanged: query = '$query'") // Check if this
@@ -369,29 +373,40 @@ class ProfileFragment : Fragment() {
 
                     placesClient.findAutocompletePredictions(request)
                         .addOnSuccessListener { response ->
-                            Log.d(TAG, "Operator: Successfully got suggestions for '$query'. Count: ${response.autocompletePredictions.size}")
+                            Log.d(
+                                TAG,
+                                "Operator: Successfully got suggestions for '$query'. Count: ${response.autocompletePredictions.size}"
+                            )
                             // ... your logic to update adapter ...
                         }
                         .addOnFailureListener { exception ->
-                            Log.e(TAG, "Operator: Failed to get suggestions for '$query'", exception)
+                            Log.e(
+                                TAG,
+                                "Operator: Failed to get suggestions for '$query'",
+                                exception
+                            )
                             // Check the type of exception. Is it an API key issue, network issue, or something else?
                         }
                 } else {
                     // Clear suggestions if query is too short
                     Log.d(TAG, "Operator: Query too short, clearing suggestions.")
                     // ... clear adapter ...
-                }}
+                }
+            }
         })
 
         autoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
             val selectedPrediction = addressSuggestionDetails.getOrNull(position)
             if (selectedPrediction != null) {
                 val selectedAddress = selectedPrediction.getFullText(null).toString()
-                autoCompleteTextView.setText(selectedAddress, false) // Set text without triggering watcher again
-                Log.d(TAG, "Address selected: $selectedAddress, Place ID: ${selectedPrediction.placeId}")
-                // You can now directly use this selectedAddress for geocoding
-                // or fetch more place details using the placeId if needed for lat/lng
-                // For now, handleSaveOperatorLocation will still use the text from the field.
+                autoCompleteTextView.setText(
+                    selectedAddress,
+                    false
+                )
+                Log.d(
+                    TAG,
+                    "Address selected: $selectedAddress, Place ID: ${selectedPrediction.placeId}"
+                )
             }
         }
     }
@@ -403,8 +418,7 @@ class ProfileFragment : Fragment() {
         }
 
         val request = FindAutocompletePredictionsRequest.builder()
-            .setCountries("RO") // Bias to Romania, for example. Add more as needed.
-            // .setTypeFilter(TypeFilter.ADDRESS) // Or REGIONS, GEOCODE, ESTABLISHMENT
+            .setCountries("RO")
             .setSessionToken(autocompleteSessionToken)
             .setQuery(query)
             .build()
@@ -441,21 +455,25 @@ class ProfileFragment : Fragment() {
                             "Operator serviceLocation found: ${serviceLocationGeoPoint.latitude}, ${serviceLocationGeoPoint.longitude}"
                         )
                         binding.textViewCurrentOperatorLocation.text =
-                            "Current Service Location: Lat ${serviceLocationGeoPoint.latitude}, Lng ${serviceLocationGeoPoint.longitude}"
+                            getString(
+                                R.string.current_service_location_lat_lng,
+                                serviceLocationGeoPoint.latitude,
+                                serviceLocationGeoPoint.longitude
+                            )
                     } else {
                         Log.d(TAG, "Operator serviceLocation is null/not set.")
                         binding.textViewCurrentOperatorLocation.text =
-                            "Current Service Location: Not Set"
+                            getString(R.string.current_service_location_not_set)
                     }
                 } else {
                     Log.w(TAG, "Operator document not found when trying to load service location.")
                     binding.textViewCurrentOperatorLocation.text =
-                        "Current Service Location: Not Set (profile missing)"
+                        getString(R.string.current_service_location_not_set_profile_missing)
                 }
             }
             .addOnFailureListener {
                 binding.textViewCurrentOperatorLocation.text =
-                    "Current Service Location: Error loading"
+                    getString(R.string.current_service_location_error_loading)
                 Log.e(TAG, "Error loading operator service location", it)
             }
     }
@@ -473,30 +491,38 @@ class ProfileFragment : Fragment() {
                             "User Home Location found: ${serviceLocationGeoPoint.latitude}, ${serviceLocationGeoPoint.longitude}"
                         )
                         binding.textViewCurrentUserLocation.text =
-                            "Current Home Residential Address: Lat ${serviceLocationGeoPoint.latitude}, Lng ${serviceLocationGeoPoint.longitude}"
+                            getString(
+                                R.string.current_home_residential_address_lat_lng,
+                                serviceLocationGeoPoint.latitude,
+                                serviceLocationGeoPoint.longitude
+                            )
                     } else {
                         Log.d(TAG, "Home Residential Address is null/not set.")
                         binding.textViewCurrentOperatorLocation.text =
-                            "Current Home Residential Address: Not Set"
+                            getString(R.string.current_home_residential_address_not_set)
                     }
                 } else {
-                    Log.w(TAG, "User document not found when trying to load Home Residential Address.")
+                    Log.w(
+                        TAG,
+                        "User document not found when trying to load Home Residential Address."
+                    )
                     binding.textViewCurrentOperatorLocation.text =
-                        "Current Home Residential Address: Not Set (profile missing)"
+                        getString(R.string.current_home_residential_address_not_set_profile_missing)
                 }
             }
             .addOnFailureListener {
                 binding.textViewCurrentOperatorLocation.text =
-                    "Current Home Residential Address: Error loading"
+                    getString(R.string.current_home_residential_address_error_loading)
                 Log.e(TAG, "Error loading user Home Residential Address", it)
             }
     }
 
+    @Suppress("DEPRECATION")
     private fun handleSaveOperatorLocation() {
         val addressText = binding.editTextOperatorAddress.text.toString().trim()
         if (addressText.isEmpty()) {
             binding.textInputLayoutOperatorAddress.error = "Address cannot be empty"
-            Toast.makeText(requireContext(), "Address cannot be empty", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Adresa nu poate fi goală", Toast.LENGTH_SHORT).show()
             return
         }
         binding.textInputLayoutOperatorAddress.error = null
@@ -505,7 +531,7 @@ class ProfileFragment : Fragment() {
         val user = auth.currentUser
 
         if (user == null) {
-            Toast.makeText(requireContext(), "User not logged in.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Utilizatorul nu a fost conectat.", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -521,67 +547,65 @@ class ProfileFragment : Fragment() {
                 }
                 withContext(Dispatchers.Main) {
                     if (!addresses.isNullOrEmpty()) {
-                        val location    = addresses[0]
-                        val latitude    = location.latitude
-                        val longitude   = location.longitude
-                        val geoPoint    = GeoPoint(latitude, longitude)
+                        val location = addresses[0]
+                        val latitude = location.latitude
+                        val longitude = location.longitude
+                        val geoPoint = GeoPoint(latitude, longitude)
 
-                        val county      = location.adminArea    ?: ""
-                        val city        = location.locality    ?: ""
+                        val county = location.adminArea ?: ""
+                        val city = location.locality ?: ""
 
                         val updates = mapOf(
                             "serviceLocation" to geoPoint,
-                            "county"          to county,
-                            "city"            to city
+                            "county" to county,
+                            "city" to city
                         )
 
                         db.collection("users").document(user.uid)
                             .update(updates)
                             .addOnSuccessListener {
-                                Toast.makeText(requireContext(), "Locație operator salvată!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Locație operator salvată!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 binding.textViewCurrentOperatorLocation.text =
-                                    "Service: $county, $city"
+                                    getString(R.string.service, county, city)
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(requireContext(), "Eroare la salvare: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Eroare la salvare: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                     } else {
-                        Toast.makeText(requireContext(), "Adresa operator nu a putut fi găsită.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Adresa operator nu a putut fi găsită.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
             } finally {
                 withContext(Dispatchers.Main) {
                     binding.buttonSaveOperatorLocation.isEnabled = true
-                    binding.editTextOperatorAddress.isEnabled   = true
+                    binding.editTextOperatorAddress.isEnabled = true
                 }
             }
         }
-    }
-    private fun handleUseCurrentGpsForOperator() {
-        Toast.makeText(
-            requireContext(),
-            "Using current GPS for operator (Not Implemented Yet)",
-            Toast.LENGTH_LONG
-        ).show()
-        Log.d(TAG, "Attempting to use current GPS for operator")
-        // TODO: Reuse checkLocationPermissionAndFetch and then save to Firestore
-        // You'll need a way to know that the location fetched is for the operator's service area
-        // e.g., pass a parameter to checkLocationPermissionAndFetch or set a flag.
-        // For now, let's just call it:
-        // checkLocationPermissionAndFetch() // Then handle the result appropriately
     }
 
     private val requestLocationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 Log.d(TAG, "Location permission granted (callback)")
-                // TODO: Decide if this location is for general use, user's request, or operator service area
-                fetchLastLocation() // Or a more specific function
+                fetchLastLocation()
             } else {
                 Log.d(TAG, "Location permission denied (callback)")
                 Toast.makeText(
                     requireContext(),
-                    "Location permission denied. Cannot fetch location.",
+                    "Permisiunea de locație refuzată. Nu se poate obține locația.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -642,39 +666,60 @@ class ProfileFragment : Fragment() {
                 if (location != null) {
                     val latitude = location.latitude
                     val longitude = location.longitude
-                    Log.d(TAG, "Last known location: Lat $latitude, Lng $longitude. Purpose: $currentLocationFetchPurpose")
+                    Log.d(
+                        TAG,
+                        "Last known location: Lat $latitude, Lng $longitude. Purpose: $currentLocationFetchPurpose"
+                    )
                     handleFetchedLocation(latitude, longitude)
                 } else {
-                    Log.d(TAG, "Last known location is null. Requesting current location (once). Purpose: $currentLocationFetchPurpose")
+                    Log.d(
+                        TAG,
+                        "Last known location is null. Requesting current location (once). Purpose: $currentLocationFetchPurpose"
+                    )
                     fetchCurrentLocationOnce() // Fetch a fresh one
                 }
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Failed to get last location", e)
-                Toast.makeText(requireContext(), "Failed to get last location.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Nu a reușit să obțină ultima locație.", Toast.LENGTH_SHORT)
+                    .show()
                 resetLocationFetchPurpose()
             }
     }
 
     @SuppressLint("MissingPermission")
     private fun fetchCurrentLocationOnce() {
-        Log.d(TAG, "Attempting to get current location (once)... Purpose: $currentLocationFetchPurpose")
+        Log.d(
+            TAG,
+            "Attempting to get current location (once)... Purpose: $currentLocationFetchPurpose"
+        )
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location ->
                 if (location != null) {
                     val latitude = location.latitude
                     val longitude = location.longitude
-                    Log.d(TAG, "Current location (once): Lat $latitude, Lng $longitude. Purpose: $currentLocationFetchPurpose")
+                    Log.d(
+                        TAG,
+                        "Current location (once): Lat $latitude, Lng $longitude. Purpose: $currentLocationFetchPurpose"
+                    )
                     handleFetchedLocation(latitude, longitude)
                 } else {
                     Log.w(TAG, "Failed to get current location (once), result was null.")
-                    Toast.makeText(requireContext(), "Could not get current location. Ensure location is ON.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Nu am putut obține locația curentă. Asigurați-vă că locația este pornită.",
+                        Toast.LENGTH_LONG
+                    ).show()
                     resetLocationFetchPurpose()
                 }
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Failed to get current location (once)", e)
-                Toast.makeText(requireContext(), "Failed to get current location.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Nu s-a reușit să se obțină locația curentă.",
+                    Toast.LENGTH_SHORT
+                ).show()
                 resetLocationFetchPurpose()
             }
     }
@@ -682,7 +727,7 @@ class ProfileFragment : Fragment() {
     private fun handleFetchedLocation(latitude: Double, longitude: Double) {
         val user = auth.currentUser
         if (user == null) {
-            Toast.makeText(requireContext(), "User not logged in.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Utilizatorul nu a fost conectat.", Toast.LENGTH_SHORT).show()
             resetLocationFetchPurpose()
             return
         }
@@ -694,46 +739,86 @@ class ProfileFragment : Fragment() {
                     .update("serviceLocation", geoPoint)
                     .addOnSuccessListener {
                         Log.d(TAG, "Operator service location updated via GPS successfully.")
-                        Toast.makeText(requireContext(), "Service location set to current GPS!", Toast.LENGTH_SHORT).show()
-                        binding.textViewCurrentOperatorLocation.text = "Current Service Location: Lat ${"%.4f".format(latitude)}, Lng ${"%.4f".format(longitude)}"
+                        Toast.makeText(
+                            requireContext(),
+                            "Locația serviciului setat la GPS-ul curent!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        binding.textViewCurrentOperatorLocation.text =
+                            getString(
+                                R.string.current_service_location_lat_lng_op,
+                                "%.4f".format(latitude),
+                                "%.4f".format(longitude)
+                            )
                         reverseGeocodeLocation(latitude, longitude, forOperator = true)
                     }
                     .addOnFailureListener { e ->
                         Log.e(TAG, "Error saving service location from GPS", e)
-                        Toast.makeText(requireContext(), "Failed to save GPS location: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Nu a reușit să salveze GPS Locația: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     .addOnCompleteListener {
                         resetLocationFetchPurpose()
                     }
             }
+
             LocationFetchPurpose.USER_RESIDENTIAL_ADDRESS_FROM_GPS -> {
                 val geoPoint = GeoPoint(latitude, longitude)
                 db.collection("users").document(user.uid)
                     .update("userLocation", geoPoint)
                     .addOnSuccessListener {
                         Log.d(TAG, "User residential address updated via GPS successfully.")
-                        Toast.makeText(requireContext(), "User location set to current GPS!", Toast.LENGTH_SHORT).show()
-                        binding.textViewCurrentUserLocation.text = "Current Home Location: Lat ${"%.4f".format(latitude)}, Lng ${"%.4f".format(longitude)}"
+                        Toast.makeText(
+                            requireContext(),
+                            "Locația utilizatorului setat la GPS-ul curent!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        binding.textViewCurrentUserLocation.text =
+                            getString(
+                                R.string.current_home_location_lat_lng_hom,
+                                "%.4f".format(latitude),
+                                "%.4f".format(longitude)
+                            )
                         reverseGeocodeLocation(latitude, longitude, forOperator = false)
                     }
                     .addOnFailureListener { e ->
                         Log.e(TAG, "Error saving user location from GPS", e)
-                        Toast.makeText(requireContext(), "Failed to save GPS location: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Nu a reușit să salveze GPS Locația: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     .addOnSuccessListener {
                         resetLocationFetchPurpose()
                     }
             }
+
             LocationFetchPurpose.GENERAL_REQUEST -> {
                 // This would be handled when a user submits a new help request, not directly in profile
                 Log.d(TAG, "Location fetched for a general request (Not implemented in profile).")
-                Toast.makeText(requireContext(), "General GPS location: Lat $latitude, Lng $longitude", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Locația GPS generală: Lat $latitude, Lng $longitude",
+                    Toast.LENGTH_LONG
+                ).show()
                 resetLocationFetchPurpose()
             }
+
             LocationFetchPurpose.NONE -> {
                 // Location fetched without a specific purpose (e.g., from the generic "Get Location" button)
-                Log.d(TAG, "Location fetched without specific purpose: Lat $latitude, Lng $longitude")
-                Toast.makeText(requireContext(), "Location: Lat $latitude, Lng $longitude (Purpose: None)", Toast.LENGTH_LONG).show()
+                Log.d(
+                    TAG,
+                    "Location fetched without specific purpose: Lat $latitude, Lng $longitude"
+                )
+                Toast.makeText(
+                    requireContext(),
+                    "Locaţie: Lat $latitude, Lng $longitude",
+                    Toast.LENGTH_LONG
+                ).show()
                 // binding.textViewCurrentLocation.text = "Lat: $latitude, Lng: $longitude" // Example display
             }
         }
@@ -744,6 +829,7 @@ class ProfileFragment : Fragment() {
     }
 
     // Optional: Reverse Geocoding function
+    @Suppress("DEPRECATION")
     private fun reverseGeocodeLocation(latitude: Double, longitude: Double, forOperator: Boolean) {
         val geocoder = Geocoder(requireContext())
         try {
@@ -754,24 +840,34 @@ class ProfileFragment : Fragment() {
                 val addressText = address.getAddressLine(0) ?: "Address not found"
                 Log.d(TAG, "Reverse geocoded to: $addressText")
                 if (forOperator) {
-                    binding.textViewCurrentOperatorLocation.text = "Current Service Location: $addressText"
+                    binding.textViewCurrentOperatorLocation.text =
+                        getString(R.string.current_service_location, addressText)
                 } else {
                     // Update UI for user's residential address if implementing that
                 }
             } else {
                 if (forOperator) {
-                    binding.textViewCurrentOperatorLocation.text = "Current Service Location: Lat ${"%.4f".format(latitude)}, Lng ${"%.4f".format(longitude)} (Address not found)"
+                    binding.textViewCurrentOperatorLocation.text =
+                        getString(
+                            R.string.current_service_location_lat_lng_address_not_found,
+                            "%.4f".format(latitude),
+                            "%.4f".format(longitude)
+                        )
                 }
             }
         } catch (e: IOException) {
             Log.e(TAG, "Reverse geocoding failed", e)
             if (forOperator) {
-                binding.textViewCurrentOperatorLocation.text = "Current Service Location: Lat ${"%.4f".format(latitude)}, Lng ${"%.4f".format(longitude)} (Error finding address)"
+                binding.textViewCurrentOperatorLocation.text =
+                    getString(
+                        R.string.current_service_location_lat_lng_error_finding_address,
+                        "%.4f".format(latitude),
+                        "%.4f".format(longitude)
+                    )
             }
         }
     }
 
-    // Make sure these functions are present from your original code
     private fun enableBiometricLogin() {
         Log.d(TAG, "enableBiometricLogin called.")
         val biometricManager = BiometricManager.from(requireContext())
@@ -794,13 +890,21 @@ class ProfileFragment : Fragment() {
 
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
                 Log.e(TAG, "No biometric features available on this device.")
-                Toast.makeText(requireContext(), "No biometric features available.", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Nu există funcții biometrice disponibile.",
+                    Toast.LENGTH_LONG
+                ).show()
                 binding.switchBiometricLogin.isChecked = false
             }
 
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
                 Log.e(TAG, "Biometric features are currently unavailable.")
-                Toast.makeText(requireContext(), "Biometric features unavailable.", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Caracteristici biometrice indisponibile.",
+                    Toast.LENGTH_LONG
+                ).show()
                 binding.switchBiometricLogin.isChecked = false
             }
 
@@ -808,7 +912,7 @@ class ProfileFragment : Fragment() {
                 Log.e(TAG, "No biometrics enrolled.")
                 Toast.makeText(
                     requireContext(),
-                    "No biometrics enrolled. Please set up in device settings.",
+                    "Nu există biometrie înscrisă. Vă rugăm să configurați în setările dispozitivului.",
                     Toast.LENGTH_LONG
                 ).show()
                 binding.switchBiometricLogin.isChecked = false
@@ -816,7 +920,11 @@ class ProfileFragment : Fragment() {
 
             else -> {
                 Log.e(TAG, "Biometric authentication unavailable. Code: $authResult")
-                Toast.makeText(requireContext(), "Biometric authentication unavailable.", Toast.LENGTH_LONG)
+                Toast.makeText(
+                    requireContext(),
+                    "Autentificarea biometrică indisponibilă.",
+                    Toast.LENGTH_LONG
+                )
                     .show()
                 binding.switchBiometricLogin.isChecked = false
             }
@@ -835,7 +943,7 @@ class ProfileFragment : Fragment() {
                     )
                     Toast.makeText(
                         requireContext(),
-                        "Authentication error: $errString",
+                        "Eroare de autentificare: $errString",
                         Toast.LENGTH_SHORT
                     ).show()
                     if (forSetup) {
@@ -849,7 +957,7 @@ class ProfileFragment : Fragment() {
                     Log.d(TAG, "BiometricPrompt AuthSucceeded. Setup: $forSetup")
                     Toast.makeText(
                         requireContext(),
-                        "Biometric Authentication succeeded!",
+                        "Autentificarea biometrică a reușit!",
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -865,7 +973,7 @@ class ProfileFragment : Fragment() {
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
                     Log.w(TAG, "BiometricPrompt AuthFailed. Setup: $forSetup")
-                    Toast.makeText(requireContext(), "Authentication failed", Toast.LENGTH_SHORT)
+                    Toast.makeText(requireContext(), "Autentificarea a eșuat", Toast.LENGTH_SHORT)
                         .show()
                     if (forSetup) {
                         binding.switchBiometricLogin.isChecked = false
@@ -884,7 +992,7 @@ class ProfileFragment : Fragment() {
     private fun storeEncryptedTokenAfterBioAuth() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(requireContext(), "User not logged in.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Utilizatorul nu a fost conectat.", Toast.LENGTH_SHORT).show()
             binding.switchBiometricLogin.isChecked = false
             Log.w(TAG, "storeEncryptedTokenAfterBioAuth: User is null.")
             return
@@ -924,7 +1032,10 @@ class ProfileFragment : Fragment() {
                         )
 
                         if (encryptedUserPayload != null) {
-                            val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            val prefs = requireContext().getSharedPreferences(
+                                PREFS_NAME,
+                                Context.MODE_PRIVATE
+                            )
                             val editor = prefs.edit()
 
                             // STORE USING THE "_userdata_" KEYS
@@ -950,7 +1061,11 @@ class ProfileFragment : Fragment() {
                             editor.putString(PREF_LAST_LOGGED_IN_UID, userId)
                             editor.apply()
 
-                            Toast.makeText(requireContext(), "Biometric login enabled.", Toast.LENGTH_SHORT)
+                            Toast.makeText(
+                                requireContext(),
+                                "Biometric login enabled.",
+                                Toast.LENGTH_SHORT
+                            )
                                 .show()
                             Log.i(
                                 TAG,
@@ -978,7 +1093,7 @@ class ProfileFragment : Fragment() {
                         } else {
                             Toast.makeText(
                                 requireContext(),
-                                "Failed to encrypt user data payload.",
+                                "Nu a reușit să criptați sarcina utilă a datelor utilizatorului.",
                                 Toast.LENGTH_SHORT
                             ).show()
                             Log.e(
@@ -991,7 +1106,7 @@ class ProfileFragment : Fragment() {
                     } else {
                         Toast.makeText(
                             requireContext(),
-                            "Failed to get/create RSA encryption key.",
+                            "Nu a reușit să obțineți/să creați cheia de criptare RSA.",
                             Toast.LENGTH_SHORT
                         ).show()
                         Log.e(
@@ -1001,7 +1116,11 @@ class ProfileFragment : Fragment() {
                         binding.switchBiometricLogin.isChecked = false
                     }
                 } else {
-                    Toast.makeText(requireContext(), "Failed to get Firebase ID token.", Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        requireContext(),
+                        "Nu a reușit să obțină simbolul de identificare Firebase.",
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                     Log.e(
                         TAG,
@@ -1012,7 +1131,7 @@ class ProfileFragment : Fragment() {
             } else {
                 Toast.makeText(
                     requireContext(),
-                    "Error getting Firebase ID token: ${task.exception?.message}",
+                    "Eroare la obținerea jetonului de identificare Firebase: ${task.exception?.message}",
                     Toast.LENGTH_SHORT
                 ).show()
                 Log.e(
@@ -1038,6 +1157,7 @@ class ProfileFragment : Fragment() {
         }
 
         Log.d(TAG, "Removing biometric preferences for UID: $currentUserId")
+        val PREF_USERDATA_ENCRYPTED_IV_PREFIX = ""
         prefs.edit()
             // Use the correct keys for the idToken/email payload
             .remove("${PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX}$currentUserId")
@@ -1052,7 +1172,7 @@ class ProfileFragment : Fragment() {
         // Also delete the corresponding RSA key from Android Keystore
         BiometricCryptographyManager.deleteInvalidKey(userBioKeyAlias) // userBioKeyAlias getter is fine
 
-        Toast.makeText(requireContext(), "Biometric login disabled.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Conectare biometrică dezactivată.", Toast.LENGTH_SHORT).show()
         Log.d(TAG, "Biometric login disabled for UID: $currentUserId")
         binding.switchBiometricLogin.isChecked = false // Ensure switch reflects the state
     }
@@ -1092,7 +1212,7 @@ class ProfileFragment : Fragment() {
                 )
                 Toast.makeText(
                     requireContext(),
-                    "Biometric status changed. Disabling feature.",
+                    "Starea biometrică schimbată. Caracteristică de dezactivare.",
                     Toast.LENGTH_LONG
                 ).show()
                 disableBiometricLogin() // This will also update the switch by setting the pref to false
@@ -1123,7 +1243,7 @@ class ProfileFragment : Fragment() {
                 if (newFirstName.isNotEmpty() || newLastName.isNotEmpty()) { // Or other validation
                     saveUserName(user.uid, newFirstName, newLastName)
                 } else {
-                    Toast.makeText(context, "Names cannot be empty.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Numele nu poate fi gol.", Toast.LENGTH_SHORT).show()
                 }
                 dialog.dismiss()
             }
@@ -1149,13 +1269,13 @@ class ProfileFragment : Fragment() {
                 Log.d(TAG, "User name updated successfully in Firestore.")
                 binding.textViewFirstName.text = firstName
                 binding.textViewLastName.text = lastName
-                Toast.makeText(requireContext(), "Name updated!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Nume actualizat!", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error updating user name", e)
                 Toast.makeText(
                     requireContext(),
-                    "Failed to update name: ${e.message}",
+                    "Nu a reușit să actualizeze numele: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -1174,15 +1294,12 @@ class ProfileFragment : Fragment() {
     private fun signOutUser() {
         Log.d(TAG, "Signing out user.")
         auth.signOut()
-        // Clear any sensitive SharedPreferences if needed upon sign-out
-        // Example: Clear biometric preference for the signed-out user if it's not tied to a specific key alias that gets deleted.
-        // However, disableBiometricLogin() should handle clearing its own prefs.
 
         val intent = Intent(requireContext(), LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(intent)
-        activity?.finish() // Finish the current activity (e.g., OperatorDashboardActivity or MainUserActivity)
+        activity?.finish()
     }
 
 

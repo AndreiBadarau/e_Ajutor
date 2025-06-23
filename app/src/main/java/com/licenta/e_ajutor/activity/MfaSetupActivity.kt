@@ -21,6 +21,10 @@ import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.PhoneMultiFactorGenerator
 import com.google.firebase.auth.PhoneMultiFactorInfo
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.licenta.e_ajutor.R
 import com.licenta.e_ajutor.databinding.ActivityMfaSetupBinding
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +32,7 @@ class MfaSetupActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMfaSetupBinding
     private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
 
     private var mfaEnrollmentSession: MultiFactorSession? = null
     private var verificationId: String? = null
@@ -48,15 +53,18 @@ class MfaSetupActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         firebaseAuth = FirebaseAuth.getInstance()
-        checkCurrentUserAndSession() // Renamed for clarity
+        db = Firebase.firestore
+        checkCurrentUserAndSession()
+
+        phoneNumberAutoFill()
 
         binding.btnSendVerificationCode.setOnClickListener {
             val phoneNumber = binding.etPhoneNumber.text.toString().trim()
-            if (phoneNumber.isNotEmpty()) {
+            if (phoneNumber.startsWith("+40") && phoneNumber.length == 12) {
                 currentPhoneNumberForEnrollment = phoneNumber // Store for potential retry
                 startPhoneNumberVerificationForEnrollment(phoneNumber)
             } else {
-                Toast.makeText(this, "Please enter a phone number.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Vă rugăm să introduceți un număr de telefon valid.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -66,16 +74,41 @@ class MfaSetupActivity : AppCompatActivity() {
                 currentSmsCodeForEnrollment = smsCode // Store for potential retry
                 verifySmsCodeAndEnroll(smsCode)
             } else {
-                Toast.makeText(this, "Please enter the verification code.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Vă rugăm să introduceți codul de verificare.", Toast.LENGTH_SHORT).show()
             }
         }
         displayMfaStatus()
     }
 
+    private fun phoneNumberAutoFill() {
+        val user = firebaseAuth.currentUser
+
+        if (user == null) {
+            Log.d(TAG, "No authenticated user found in ProfileFragment.")
+            return
+        }
+
+        db.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    Log.d(TAG, "User document found in Firestore.")
+                    val phoneNumber = document.getString("phone")
+                    binding.etPhoneNumber.setText("+4" + phoneNumber)
+                }
+                else {
+                    Log.w(TAG, "No such user document for uid: ${user.uid}. Defaulting UI.")
+                    binding.etPhoneNumber.setText("+40")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Firestore get failed for user ${user.uid}", exception)
+            }
+    }
+
     private fun checkCurrentUserAndSession() {
         val currentUser = firebaseAuth.currentUser
         if (currentUser == null) {
-            Toast.makeText(this, "User not logged in.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Utilizatorul nu a fost conectat.", Toast.LENGTH_LONG).show()
             // Consider navigating to LoginActivity instead of just finishing
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -91,12 +124,13 @@ class MfaSetupActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error getting MultiFactorSession: ${e.message}", e)
                 if (e is FirebaseAuthRecentLoginRequiredException) {
-                    binding.tvMfaStatus.text = "Session requires recent login. Please re-authenticate."
+                    binding.tvMfaStatus.text = getString(R.string.session_requires_recent_login)
                     handleRecentLoginRequired(currentUser) {
                         checkCurrentUserAndSession() // Retry getting session after re-auth
                     }
                 } else {
-                    binding.tvMfaStatus.text = "Error preparing for MFA setup: ${e.message}"
+                    binding.tvMfaStatus.text =
+                        getString(R.string.error_preparing_for_mfa_setup, e.message)
                 }
                 binding.btnSendVerificationCode.isEnabled = false
             }
@@ -105,13 +139,13 @@ class MfaSetupActivity : AppCompatActivity() {
     private fun startPhoneNumberVerificationForEnrollment(phoneNumber: String) {
         val currentUser = firebaseAuth.currentUser
         if (currentUser == null) {
-            Toast.makeText(this, "User not logged in. Please log in again.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Utilizatorul nu a fost conectat. Vă rugăm să vă conectați din nou.", Toast.LENGTH_LONG).show()
             finish()
             return
         }
 
         if (mfaEnrollmentSession == null) {
-            Toast.makeText(this, "MFA Session not ready. Trying to refresh...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Sesiunea MFA nu este pregătită. Încercând să reîmprospătați ...", Toast.LENGTH_SHORT).show()
             checkCurrentUserAndSession() // Attempt to re-fetch session
             return
         }
@@ -132,9 +166,9 @@ class MfaSetupActivity : AppCompatActivity() {
                 Log.e(TAG, "Enrollment: onVerificationFailed: ${e.message}", e)
                 binding.progressBar.visibility = View.GONE
                 binding.btnSendVerificationCode.isEnabled = true
-                binding.tvMfaStatus.text = "Verification failed: ${e.message}"
+                binding.tvMfaStatus.text = getString(R.string.verification_failed, e.message)
                 if (e is FirebaseAuthRecentLoginRequiredException) {
-                    Toast.makeText(this@MfaSetupActivity, "Verification requires recent login. Please re-authenticate.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MfaSetupActivity, "Verificarea necesită o autentificare recentă. Vă rugăm să reauțiți.", Toast.LENGTH_LONG).show()
                     handleRecentLoginRequired(currentUser) {
                         // Retry starting phone number verification
                         currentPhoneNumberForEnrollment?.let { storedPhoneNumber ->
@@ -142,7 +176,7 @@ class MfaSetupActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    Toast.makeText(this@MfaSetupActivity, "Verification failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MfaSetupActivity, "Verificarea a eșuat: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
 
@@ -159,7 +193,7 @@ class MfaSetupActivity : AppCompatActivity() {
 
                 binding.layoutVerifyEnroll.visibility = View.VISIBLE
                 binding.btnVerifyAndEnroll.isEnabled = true
-                Toast.makeText(this@MfaSetupActivity, "Verification code sent.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MfaSetupActivity, "Cod de verificare trimis.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -168,7 +202,7 @@ class MfaSetupActivity : AppCompatActivity() {
             .setTimeout(60L, TimeUnit.SECONDS)
             .setActivity(this)
             .setCallbacks(callbacks)
-            .setMultiFactorSession(mfaEnrollmentSession!!) // Critical for enrollment
+            .setMultiFactorSession(mfaEnrollmentSession!!)
             .build()
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
@@ -176,8 +210,8 @@ class MfaSetupActivity : AppCompatActivity() {
     private fun verifySmsCodeAndEnroll(smsCode: String) {
         val currentUser = firebaseAuth.currentUser
         if (currentUser == null || verificationId == null) {
-            Toast.makeText(this, "Session error or Verification ID missing. Please try again.", Toast.LENGTH_SHORT).show()
-            checkCurrentUserAndSession() // Try to refresh session and state
+            Toast.makeText(this, "Eroare de sesiune sau ID de verificare lipsește. Încercați din nou.", Toast.LENGTH_SHORT).show()
+            checkCurrentUserAndSession()
             return
         }
         binding.btnVerifyAndEnroll.isEnabled = false
@@ -193,7 +227,7 @@ class MfaSetupActivity : AppCompatActivity() {
             .addOnSuccessListener {
                 Log.d(TAG, "MFA Enrolled successfully!")
                 binding.progressBar.visibility = View.GONE
-                binding.tvMfaStatus.text = "SMS MFA successfully enabled!"
+                binding.tvMfaStatus.text = getString(R.string.sms_mfa_successfully)
                 binding.layoutVerifyEnroll.visibility = View.GONE
                 binding.etPhoneNumber.text.clear()
                 binding.etSmsCode.text.clear()
@@ -207,38 +241,33 @@ class MfaSetupActivity : AppCompatActivity() {
                 Log.e(TAG, "Error enrolling MFA: ${e.message}", e)
                 binding.progressBar.visibility = View.GONE
                 binding.btnVerifyAndEnroll.isEnabled = true
-                binding.tvMfaStatus.text = "MFA enrollment failed: ${e.message}"
+                binding.tvMfaStatus.text = getString(R.string.mfa_enrollment_failed, e.message)
                 if (e is FirebaseAuthRecentLoginRequiredException) {
-                    Toast.makeText(this@MfaSetupActivity, "Enrollment requires recent login. Please re-authenticate.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MfaSetupActivity, "Înscrierea necesită o autentificare recentă. Vă rugăm să reeutentificați.", Toast.LENGTH_LONG).show()
                     handleRecentLoginRequired(user) {
                         // Retry enrollment with the same assertion
                         enrollMfa(user, assertion)
                     }
                 } else {
-                    Toast.makeText(this@MfaSetupActivity, "Enrollment failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MfaSetupActivity, "Înscrierea a eșuat: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
     }
 
     private fun handleRecentLoginRequired(user: FirebaseUser, onReauthSuccess: () -> Unit) {
-        // Simple dialog to prompt re-authentication.
-        // In a production app, you might navigate to a dedicated re-auth screen or use a more robust dialog.
         AlertDialog.Builder(this)
-            .setTitle("Authentication Required")
-            .setMessage("For your security, this action requires you to have signed in recently. Please sign in again to continue.")
-            .setPositiveButton("Sign In") { dialog, _ ->
+            .setTitle("Autentificare necesară")
+            .setMessage("Pentru securitatea dvs., această acțiune necesită să fiți autentificat recent. Vă rugăm să vă conectați din nou pentru a continua.")
+            .setPositiveButton("Conectare") { dialog, _ ->
                 dialog.dismiss()
-                // For this example, we'll use a very basic password prompt.
-                // It's highly recommended to navigate to your actual LoginActivity
-                // or a dedicated ReAuthenticationActivity for a better UX and security.
                 promptForPasswordAndReauthenticate(user, onReauthSuccess)
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
-                binding.progressBar.visibility = View.GONE // Ensure progress bar is hidden
-                binding.btnSendVerificationCode.isEnabled = true // Re-enable buttons
+                binding.progressBar.visibility = View.GONE
+                binding.btnSendVerificationCode.isEnabled = true
                 binding.btnVerifyAndEnroll.isEnabled = true
-                Toast.makeText(this, "Operation cancelled. Please log in again if needed.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Operațiunea anulată. Vă rugăm să vă conectați din nou, dacă este necesar.", Toast.LENGTH_LONG).show()
             }
             .setCancelable(false)
             .show()
@@ -246,15 +275,14 @@ class MfaSetupActivity : AppCompatActivity() {
 
     private fun promptForPasswordAndReauthenticate(user: FirebaseUser, onReauthSuccess: () -> Unit) {
         if (user.email == null) {
-            Toast.makeText(this, "Cannot re-authenticate without user email.", Toast.LENGTH_LONG).show()
-            // Potentially offer to go to LoginActivity to re-login with any provider
+            Toast.makeText(this, "Nu se poate re-autentificarea fără e-mailul utilizatorului.", Toast.LENGTH_LONG).show()
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
         }
 
         val passwordInput = EditText(this).apply {
-            hint = "Enter your password"
+            hint = "Introduceți parola"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
         val padding = (16 * resources.displayMetrics.density).toInt() // 16dp padding
@@ -262,10 +290,10 @@ class MfaSetupActivity : AppCompatActivity() {
 
 
         AlertDialog.Builder(this)
-            .setTitle("Re-enter Password")
-            .setMessage("To continue, please enter the password for ${user.email}")
+            .setTitle("Reintroduceți parola")
+            .setMessage("Pentru a continua, vă rugăm să introduceți parola pentru ${user.email}")
             .setView(passwordInput)
-            .setPositiveButton("Verify") { dialog, _ ->
+            .setPositiveButton("Verifica") { dialog, _ ->
                 val password = passwordInput.text.toString()
                 if (password.isNotEmpty()) {
                     binding.progressBar.visibility = View.VISIBLE // Show progress during re-auth
@@ -274,21 +302,21 @@ class MfaSetupActivity : AppCompatActivity() {
                         .addOnSuccessListener {
                             binding.progressBar.visibility = View.GONE
                             Log.d(TAG, "Re-authentication successful.")
-                            Toast.makeText(this, "Re-authentication successful.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Re-autentificarea a fost de succes.", Toast.LENGTH_SHORT).show()
                             onReauthSuccess() // Call the retry callback
                         }
                         .addOnFailureListener { e ->
                             binding.progressBar.visibility = View.GONE
                             Log.w(TAG, "Re-authentication failed.", e)
-                            Toast.makeText(this, "Re-authentication failed: ${e.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Re-autentificarea a eșuat: ${e.message}", Toast.LENGTH_LONG).show()
                             // Optionally, offer to go to LoginActivity
                         }
                 } else {
-                    Toast.makeText(this, "Password cannot be empty.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Parola nu poate fi goală.", Toast.LENGTH_SHORT).show()
                 }
                 dialog.dismiss()
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .setNegativeButton("Anulează") { dialog, _ ->
                 dialog.dismiss()
                 binding.progressBar.visibility = View.GONE
                 binding.btnSendVerificationCode.isEnabled = true // Re-enable buttons
@@ -301,26 +329,24 @@ class MfaSetupActivity : AppCompatActivity() {
 
     private fun displayMfaStatus() {
         firebaseAuth.currentUser?.let { user ->
-            var mfaFactorsInfo = "Enrolled MFA factors:\n"
+            var mfaFactorsInfo = "Factorii MFA înscriși:\n"
             if (user.multiFactor.enrolledFactors.isEmpty()) {
-                mfaFactorsInfo += "None"
+                mfaFactorsInfo += "Nici unul"
             } else {
                 user.multiFactor.enrolledFactors.forEach { factor ->
-                    mfaFactorsInfo += "- ${factor.displayName ?: "Unknown Factor"} (ID: ${factor.uid.take(6)}...)" // Using uid as factorId is deprecated
+                    mfaFactorsInfo += "- ${factor.displayName ?: "Factor necunoscut"} (ID: ${factor.uid.take(6)}...)"
                     if (factor is PhoneMultiFactorInfo) {
-                        mfaFactorsInfo += ", Phone: ${factor.phoneNumber}"
+                        mfaFactorsInfo += ", Telefon: ${factor.phoneNumber}"
                     }
                     mfaFactorsInfo += ")\n"
                 }
             }
-            binding.tvCurrentMfaInfo.text = mfaFactorsInfo // Ensure this TextView exists
+            binding.tvCurrentMfaInfo.text = mfaFactorsInfo
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // It's good practice to re-check the user and session state onResume,
-        // especially if the user might have logged out or re-authenticated in another part of the app.
         checkCurrentUserAndSession()
         displayMfaStatus()
     }

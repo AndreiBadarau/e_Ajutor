@@ -12,20 +12,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="MFA Status: Not checked" />
+        android:textStyle="bold"
+        android:text="@string/mfa_status_not_checked" />
 
     <TextView
         android:id="@+id/tvCurrentMfaInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Enrolled factors: " />
+        android:textStyle="bold"
+        android:text="@string/enrolled_factors" />
 
     <EditText
         android:id="@+id/etPhoneNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Phone number (e.g., +16505551234)"
+        android:hint="Numar de telefon (ex. +40723456789)"
         android:inputType="phone" />
 
     <Button
@@ -34,7 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:enabled="false"
-        android:text="Send Verification Code" />
+        android:text="@string/send_verification_code" />
 
     <LinearLayout
         android:id="@+id/layoutVerifyEnroll"
@@ -48,7 +50,7 @@
             android:id="@+id/etSmsCode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="SMS Code"
+            android:hint="Cod SMS"
             android:inputType="number" />
 
         <Button
@@ -57,7 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:enabled="false"
-            android:text="Verify and Enable MFA" />
+            android:text="@string/verify_and_enable_mfa" />
     </LinearLayout>
 
     <ProgressBar

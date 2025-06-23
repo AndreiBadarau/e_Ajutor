@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="Autentificare in e-Ajutor"
+        android:text="@string/autentificare_in_e_ajutor"
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -32,7 +32,7 @@
             android:id="@+id/editTextEmailLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Adresa de email"
+            android:hint="@string/adresa_de_e_mail"
             android:inputType="textEmailAddress" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -51,7 +51,7 @@
             android:id="@+id/editTextPasswordLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Parola"
+            android:hint="@string/password"
             android:inputType="textPassword" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -60,7 +60,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Autentificare"
+        android:text="@string/auth"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textInputLayoutPasswordLogin" />
@@ -71,7 +71,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:padding="8dp"
-        android:text="Ai uitat parola?"
+        android:text="@string/forgot_pass"
         android:textColor="?attr/colorPrimary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/buttonLogin" />
@@ -95,15 +95,14 @@
         android:layout_width="78dp"
         android:layout_height="72dp"
         android:layout_marginStart="16dp"
-        android:contentDescription="Login with Biometrics"
+        android:contentDescription="@string/login_with_biometrics"
         android:scaleType="centerInside"
         android:src="@drawable/ic_fingerprint"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@+id/googleSignInButton"
         app:layout_constraintStart_toEndOf="@+id/googleSignInButton"
         app:layout_constraintTop_toTopOf="@+id/googleSignInButton"
-
-        />
+        tools:visibility="visible"/>
 
     <TextView
         android:id="@+id/textViewGoToRegister"
@@ -111,7 +110,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:padding="8dp"
-        android:text="Nu ai cont? Inregistreaza-te"
+        android:text="@string/no_acc_question"
         android:textColor="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

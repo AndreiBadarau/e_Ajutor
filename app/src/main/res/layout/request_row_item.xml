@@ -23,6 +23,7 @@
             android:layout_height="40dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="@string/benefit_type_icon"
             tools:srcCompat="@drawable/ic_benefit_placeholder" /> <!-- Placeholder icon -->
 
         <!-- Benefit Type Text -->

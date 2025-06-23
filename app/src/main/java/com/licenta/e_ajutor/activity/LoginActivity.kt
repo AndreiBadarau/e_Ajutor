@@ -1,7 +1,9 @@
 package com.licenta.e_ajutor.activity
 
 import BiometricCryptographyManager
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -12,17 +14,22 @@ import android.util.Patterns
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
-import com.google.android.gms.auth.api.identity.BeginSignInRequest
-import com.google.android.gms.auth.api.identity.Identity
-import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.android.gms.common.api.ApiException
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -53,6 +60,7 @@ import com.licenta.e_ajutor.PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX
 import com.licenta.e_ajutor.R
 import com.licenta.e_ajutor.databinding.DialogMfaLoginCodeBinding
 import com.licenta.e_ajutor.databinding.LoginPageBinding
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.Executor
@@ -64,13 +72,11 @@ class LoginActivity : AppCompatActivity() {
     private val lastUserUid: String?
         get() = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getString(PREF_LAST_LOGGED_IN_UID, null)
-    private lateinit var binding: LoginPageBinding // Or LoginPageBinding etc.
+    private lateinit var binding: LoginPageBinding
     private lateinit var auth: FirebaseAuth
-    private lateinit var oneTapClient: SignInClient
-    private lateinit var signUpRequest: BeginSignInRequest
-    private lateinit var signInRequest: BeginSignInRequest
+
     private lateinit var executor: Executor
-    private lateinit var biometricPromptLogin: BiometricPrompt // Separate prompt instance for login
+    private lateinit var biometricPromptLogin: BiometricPrompt
     private lateinit var promptInfoLogin: BiometricPrompt.PromptInfo
     private var loginAttempts = 0
     private val MAX_LOGIN_ATTEMPTS_BEFORE_SUGGESTION = 2
@@ -78,48 +84,14 @@ class LoginActivity : AppCompatActivity() {
     private var mfaSignInVerificationId: String? = null
     private var mfaSignInResendingToken: PhoneAuthProvider.ForceResendingToken? = null
 
+    private lateinit var credentialManager: CredentialManager // Already here, good!
+
 
     private val functions: FirebaseFunctions by lazy {
         Firebase.functions
     }
 
-    private val TAG = "LoginActivityGIS"
-
-    private val oneTapSignInResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            try {
-                val credential = oneTapClient.getSignInCredentialFromIntent(result.data)
-                val idToken = credential.googleIdToken
-                when {
-                    idToken != null -> {
-                        Log.d(TAG, "Got ID token from Google: $idToken")
-                        firebaseAuthWithGoogle(idToken)
-                    }
-
-                    else -> {
-                        Log.e(TAG, "No ID token or password!")
-                        Toast.makeText(
-                            this,
-                            "Google Sign-In failed: No ID token.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            } catch (e: ApiException) {
-                Log.e(TAG, "Google Sign-In failed: ${e.localizedMessage}", e)
-                Toast.makeText(
-                    this,
-                    "Google Sign-In failed: ${e.localizedMessage}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        } else {
-            Log.d(TAG, "Google Sign-In cancelled or failed. Result code: ${result.resultCode}")
-            Toast.makeText(this, "Google Sign-In cancelled or failed.", Toast.LENGTH_SHORT).show()
-        }
-    }
+    private val tag = "LoginActivity"
 
     private val lastUserBioKeyAlias: String?
         get() = lastUserUid?.let { "${PREF_KEY_BIOMETRIC_KEY_ALIAS_PREFIX}$it" }
@@ -127,144 +99,251 @@ class LoginActivity : AppCompatActivity() {
     private val lastUserIsBiometricEnabledKey: String?
         get() = lastUserUid?.let { "${PREF_IS_BIOMETRIC_ENABLED_PREFIX}$it" }
 
-    // For Hybrid Encryption (Encrypted Token)
-    private val lastUserEncryptedSymmetricKeyUserDataPrefKey: String?
-        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX}$it" }
+//    private val lastUserEncryptedSymmetricKeyUserDataPrefKey: String?
+//        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX}$it" }
+//
+//    private val lastUserIvUserDataPrefKey: String?
+//        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_IV_PREFIX}$it" }
+//
+//    private val lastUserEncryptedUserDataPrefKey: String?
+//        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_DATA_PREFIX}$it" }
 
-    private val lastUserIvUserDataPrefKey: String?
-        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_IV_PREFIX}$it" }
-
-    private val lastUserEncryptedUserDataPrefKey: String?
-        get() = lastUserUid?.let { "${PREF_USERDATA_ENCRYPTED_DATA_PREFIX}$it" }
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                Log.i("NotificationPermission", "POST_NOTIFICATIONS permission granted by user.")
+            } else {
+                Log.w("NotificationPermission", "POST_NOTIFICATIONS permission denied by user.")
+                // Optionally, inform the user that some notification-based features might not work
+                // Toast.makeText(this, "Notifications will not be shown.", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     public override fun onStart() {
         super.onStart()
         val currentUser = auth.currentUser
         if (currentUser != null) {
             Log.d(
-                TAG,
+                tag,
                 "onStart: User already logged in: ${currentUser.uid}, Email: ${currentUser.email}"
             )
-
-            // Check if email is verified, but skip this check for Google Sign-In users
-            // as Google handles email verification during their account creation.
             if (!currentUser.isEmailVerified && !isGoogleSignInUser(currentUser)) {
                 Log.w(
-                    TAG,
+                    tag,
                     "onStart: User logged in but email NOT verified. Showing verification dialog."
                 )
-                // Hide general progress bar if it was somehow visible, ensure UI is enabled for dialog interaction
                 binding.progressBarLogin.visibility = View.GONE
-                enableLoginUI(true) // Ensure login form elements are usable if dialog is dismissed
+                enableLoginUI(true)
                 showEmailNotVerifiedDialog(
                     currentUser,
                     true
-                ) // Pass true to indicate it's from onStart
+                )
             } else {
-                // User is logged in and email is verified (or not required for this provider)
                 Log.d(
-                    TAG,
+                    tag,
                     "onStart: User logged in and email verified (or not required). Checking role..."
                 )
-                binding.progressBarLogin.visibility = View.VISIBLE // Show loading indicator
-                disableLoginUIWhileChecking() // Disable other UI elements
-                handleSuccessfulLoginWithRoleCheck(currentUser) // Proceed to check role and navigate
+                binding.progressBarLogin.visibility = View.VISIBLE
+                disableLoginUIWhileChecking()
+                handleSuccessfulLoginWithRoleCheck(currentUser)
             }
         } else {
-            // No user is signed in
-            Log.d(TAG, "onStart: No user logged in. Login screen will display.")
-            enableLoginUI(true) // Ensure login UI is fully enabled
+            Log.d(tag, "onStart: No user logged in. Login screen will display.")
+            enableLoginUI(true)
             binding.progressBarLogin.visibility = View.GONE
-            checkBiometricAvailabilityAndSetupLoginPrompt() // Re-check biometric button based on stored prefs
+            checkBiometricAvailabilityAndSetupLoginPrompt()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "LoginActivity onCreate started")
+        Log.d(tag, "LoginActivity onCreate started")
 
         try {
             binding = LoginPageBinding.inflate(layoutInflater)
-            setContentView(binding.root) // Set content view immediately after binding
-            Log.d(TAG, "LoginActivity setContentView called with binding.root")
+            setContentView(binding.root)
+            Log.d(tag, "LoginActivity setContentView called with binding.root")
         } catch (e: Exception) {
-            Log.e(TAG, "Error during binding inflation or setContentView: ", e)
+            Log.e(tag, "Error during binding inflation or setContentView: ", e)
+            Toast.makeText(
+                this,
+                "Vizualizare inițializare a erorilor. Vă rugăm să reporniți aplicația.",
+                Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
         }
 
         auth = Firebase.auth
-        oneTapClient = Identity.getSignInClient(this)
-        Log.d(TAG, "Firebase Auth initialized")
+        credentialManager = CredentialManager.create(this)
+        Log.d(tag, "Firebase Auth and CredentialManager initialized")
 
-        signUpRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId(getString(R.string.default_web_client_id))
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            )
-            .build()
-
-//                if (auth.currentUser != null) {
-//                    Log.d(TAG, "User already logged in, attempting to navigate to Main.")
-//                    navigateToMainApp()
-//                    return
-//                }
+        askNotificationPermission()
 
         binding.buttonLogin.setOnClickListener {
-            Log.d(TAG, "Login button clicked")
+            Log.d(tag, "Login button clicked")
             loginUser()
         }
 
         binding.textViewGoToRegister.setOnClickListener {
-            Log.d(TAG, "Go to Register clicked")
+            Log.d(tag, "Go to Register clicked")
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
         binding.textViewForgotPassword.setOnClickListener {
-            Log.d(TAG, "Forgot Password clicked")
+            Log.d(tag, "Forgot Password clicked")
             showForgotPasswordDialog()
         }
 
         binding.googleSignInButton.setOnClickListener {
-            Log.d(TAG, "Google Sign-In button clicked")
-            oneTapClient.beginSignIn(signUpRequest)
-                .addOnSuccessListener(this) { result ->
+            Log.d(tag, "Google Sign-In button clicked (New GIS Flow)")
+            binding.progressBarLogin.visibility = View.VISIBLE // Show progress
+            enableLoginUI(false) // Disable other UI elements
+
+            lifecycleScope.launch {
+                val googleIdOption: GetGoogleIdOption = buildGoogleSignInRequest()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                try {
+                    val result = credentialManager.getCredential(
+                        context = this@LoginActivity,
+                        request = request
+                    )
+                    Log.d(tag, "Google Sign-In GetCredential success.")
+                    handleSignInWithGoogleCredential(result.credential)
+                } catch (e: GetCredentialException) {
+                    binding.progressBarLogin.visibility = View.GONE
+                    enableLoginUI(true)
+                    Log.e(tag, "Google Sign-In GetCredentialException: ${e.message}", e)
+                    var errorMessage = "Conectarea Google a eșuat: ${e.message}"
+                    when (e) {
+                        is GetCredentialCancellationException -> {
+                            Log.d(tag, "User cancelled Google Sign-In.")
+                            errorMessage = "Conectarea Google a fost anulată."
+                        }
+
+                        is NoCredentialException -> {
+                            Log.e(tag, "No Google credentials found on device for Sign-In.")
+                            errorMessage = "Niciun cont Google nu a fost găsit pentru a se conecta."
+                        }
+
+                        else -> {
+                            Log.e(tag, "An unexpected error occurred during Google sign-in.")
+                            errorMessage = "A apărut o eroare neașteptată în timpul conectării Google."
+                        }
+                    }
+                    Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        Log.d(tag, "LoginActivity onCreate finished successfully")
+    }
+
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33+
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission is already granted
+                    Log.i("NotificationPermission", "POST_NOTIFICATIONS permission already granted.")
+                }
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                    // Show an educational UI to the user
+                    // This is a good place to explain why your app *might* need notifications,
+                    // even if you're unsure which specific feature triggers it.
+                    // Keep it generic if you don't know the exact source.
+                    AlertDialog.Builder(this)
+                        .setTitle("Notification Permission")
+                        .setMessage("To ensure you receive important updates and alerts, this app may need to display notifications. Please grant permission.")
+                        .setPositiveButton("OK") { _, _ ->
+                            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        .setNegativeButton("No thanks",  null) // Or handle denial more gracefully
+                        .show()
+                }
+                else -> {
+                    // Directly ask for the permission
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+
+    private fun buildGoogleSignInRequest(): GetGoogleIdOption {
+        return GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(getString(R.string.default_web_client_id))
+            .setAutoSelectEnabled(true)
+            .build()
+    }
+
+    private fun handleSignInWithGoogleCredential(credential: androidx.credentials.Credential) {
+        when (credential) {
+            is CustomCredential -> {
+                if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     try {
-                        val intentSenderRequest =
-                            IntentSenderRequest.Builder(result.pendingIntent.intentSender).build()
-                        oneTapSignInResultLauncher.launch(intentSenderRequest)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}", e)
+                        val googleIdTokenCredential =
+                            GoogleIdTokenCredential.createFrom(credential.data)
+                        val googleIdToken = googleIdTokenCredential.idToken
+                        Log.d(tag, "Got ID token from Google (GIS): $googleIdToken")
+                        firebaseAuthWithGoogle(googleIdToken)
+                    } catch (e: GoogleIdTokenParsingException) {
+                        binding.progressBarLogin.visibility = View.GONE
+                        enableLoginUI(true)
+                        Log.e(tag, "Google Sign-In failed to parse ID token.", e)
                         Toast.makeText(
                             this,
-                            "Google Sign-In error: ${e.localizedMessage}",
+                            "Eroare de conectare Google: nu a putut analiza token.",
                             Toast.LENGTH_LONG
                         ).show()
                     }
-                }
-                .addOnFailureListener(this) { e ->
-                    Log.e(TAG, "Google Sign-In failed to begin: ${e.localizedMessage}", e)
+                } else {
+                    binding.progressBarLogin.visibility = View.GONE
+                    enableLoginUI(true)
+                    Log.e(
+                        tag,
+                        "Google Sign-In error: Unexpected custom credential type: ${credential.type}"
+                    )
                     Toast.makeText(
                         this,
-                        "Google Sign-In failed: ${e.localizedMessage}",
+                        "Eroare de conectare Google: tip de acreditare neașteptat.",
                         Toast.LENGTH_LONG
                     ).show()
                 }
+            }
+
+            else -> {
+                binding.progressBarLogin.visibility = View.GONE // Ensure hidden on error
+                enableLoginUI(true)
+                Log.e(
+                    tag,
+                    "Google Sign-In error: Unexpected credential type: ${credential::class.java.simpleName}"
+                )
+                Toast.makeText(
+                    this,
+                    "Eroare de conectare Google: tip de acreditare nu este acceptat.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
-        Log.d(TAG, "LoginActivity onCreate finished successfully")
     }
+
 
     override fun onResume() {
         super.onResume()
-        Log.d(TAG, "LoginActivity onResume CALLED")
+        Log.d(tag, "LoginActivity onResume CALLED")
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val lastUid = prefs.getString(PREF_LAST_LOGGED_IN_UID, null)
 
         if (auth.currentUser != null) {
             Log.d(
-                TAG,
+                tag,
                 "onResume: currentUser is NOT null (UID: ${auth.currentUser?.uid}). Last stored UID for biometrics: $lastUid"
             )
             if (auth.currentUser!!.uid == lastUid) {
@@ -276,34 +355,34 @@ class LoginActivity : AppCompatActivity() {
                 }
 
                 Log.d(
-                    TAG,
+                    tag,
                     "onResume: Current user matches last biometric user. Is biometric enabled for them? $isBiometricActuallyEnabled (Key: $biometricEnabledKeyForLastUser)"
                 )
 
                 if (isBiometricActuallyEnabled) {
                     Log.d(
-                        TAG,
+                        tag,
                         "onResume: Firebase session active for biometric user. Setting up biometric prompt for unlock."
                     )
-                    checkBiometricAvailabilityAndSetupLoginPrompt()
+                    checkBiometricAvailabilityAndSetupLoginPrompt() // This internally calls setupBiometricLoginComponents if needed
 
                 } else {
                     Log.d(
-                        TAG,
+                        tag,
                         "onResume: Current user matches last biometric user, but biometrics NOT enabled in prefs. Hiding biometric button."
                     )
                     binding.buttonBiometricLogin.visibility = View.GONE
                 }
             } else {
                 Log.d(
-                    TAG,
+                    tag,
                     "onResume: Current user exists but is not the last biometric user (or no last biometric user stored). Hiding biometric button."
                 )
                 binding.buttonBiometricLogin.visibility = View.GONE
             }
         } else {
             Log.d(
-                TAG,
+                tag,
                 "onResume: currentUser is NULL. Setting up biometric prompt for login if available for a previous user."
             )
             checkBiometricAvailabilityAndSetupLoginPrompt()
@@ -315,37 +394,27 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun handleSuccessfulLoginWithRoleCheck(user: FirebaseUser) {
-        // Show progress bar if you have one for this specific step
-        // binding.progressBarRoleCheck.visibility = View.VISIBLE
-        // disableUI() // Optional: Disable buttons during check
+        // Progress bar should already be visible or set by the caller (e.g. firebaseAuthWithGoogle or biometric flow)
+        // If not, uncomment: binding.progressBarLogin.visibility = View.VISIBLE
+        // disableLoginUIWhileChecking() // Caller should also handle disabling UI if needed
 
-        user.getIdToken(true) // Force refresh to get latest claims
+        user.getIdToken(true)
             .addOnCompleteListener { task ->
-                // Hide progress bar
-                // binding.progressBarRoleCheck.visibility = View.GONE
-                // enableUI() // Re-enable UI
+                // This function is now responsible for hiding the progress bar and re-enabling UI
+                binding.progressBarLogin.visibility = View.GONE
+                enableLoginUI(true) // Re-enable all UI elements now
 
                 if (task.isSuccessful) {
                     val idTokenResult: GetTokenResult? = task.result
                     val isOperator = idTokenResult?.claims?.get("operator") as? Boolean ?: false
 
-                    // Store last logged-in UID for biometric purposes if needed
                     getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                         .putString(PREF_LAST_LOGGED_IN_UID, user.uid)
                         .apply()
 
-                    // Save the ID token if you plan to use it for biometric re-authentication later
-                    // This is a simplified example; secure storage is crucial.
-                    // For biometric login, you'd encrypt this token.
-                    // val idToken = idTokenResult?.token
-                    // if (idToken != null) {
-                    //    saveTokenForBiometricLogin(user.uid, idToken) // You'd need to implement this securely
-                    // }
-
-
                     if (isOperator) {
-                        Log.d(TAG, "User is an OPERATOR. Navigating to OperatorDashboardActivity.")
-                        Toast.makeText(this, "Operator login successful.", Toast.LENGTH_SHORT)
+                        Log.d(tag, "User is an OPERATOR. Navigating to OperatorDashboardActivity.")
+                        Toast.makeText(this, "Conectarea Operatorului a fost de succes.", Toast.LENGTH_SHORT)
                             .show()
                         val intent = Intent(
                             this,
@@ -356,12 +425,12 @@ class LoginActivity : AppCompatActivity() {
                         startActivity(intent)
                         finish()
                     } else {
-                        Log.d(TAG, "User is a REGULAR user. Navigating to MainActivity.")
-                        Toast.makeText(this, "Login successful.", Toast.LENGTH_SHORT).show()
+                        Log.d(tag, "User is a REGULAR user. Navigating to MainUserActivity.")
+                        Toast.makeText(this, "Conectare cu succes", Toast.LENGTH_SHORT).show()
                         val intent = Intent(
                             this,
                             MainUserActivity::class.java
-                        ) // Replace with your actual Main Activity
+                        )
                         intent.flags =
                             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
@@ -369,152 +438,121 @@ class LoginActivity : AppCompatActivity() {
                     }
                 } else {
                     // Failed to get token or claims
-                    Log.e(TAG, "Failed to get ID token with claims: ", task.exception)
+                    Log.e(tag, "Failed to get ID token with claims: ", task.exception)
                     Toast.makeText(
                         baseContext,
-                        "Login failed: Could not verify user role.",
+                        "Conectarea a eșuat: nu a putut verifica rolul utilizatorului.",
                         Toast.LENGTH_SHORT
                     ).show()
-                    auth.signOut() // Sign out if token retrieval fails
-                    enableLoginUI(true) // Re-enable login fields/buttons
+                    auth.signOut()
+                    // UI is already re-enabled by the start of this block's onCompleteListener
                 }
             }
     }
 
-    private fun checkBiometricAvailabilityAndSetupLoginPrompt() {
-        Log.d(TAG, "################################################################")
-        Log.d(TAG, "checkBiometricAvailabilityAndSetupLoginPrompt EXECUTING NOW")
-        val prefs = this.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
-        val currentLastUserUid = this.lastUserUid // Getter property
-        Log.d(
-            TAG,
-            "1. Value of 'currentLastUserUid' (from this.lastUserUid): '$currentLastUserUid'"
-        )
+    private fun checkBiometricAvailabilityAndSetupLoginPrompt() {
+        Log.d(tag, "################################################################")
+        Log.d(tag, "checkBiometricAvailabilityAndSetupLoginPrompt EXECUTING NOW")
+        val prefs = this.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val currentLastUserUid = this.lastUserUid
+        Log.d(tag, "1. Value of 'currentLastUserUid': '$currentLastUserUid'")
 
         if (currentLastUserUid == null) {
-            Log.w(
-                TAG,
-                "   'currentLastUserUid' is null. Biometric button will remain hidden. Check if PREF_LAST_LOGGED_IN_UID is set."
-            )
+            Log.w(tag, "   'currentLastUserUid' is null. Biometric button will remain hidden.")
             binding.buttonBiometricLogin.visibility = View.GONE
-            Log.d(TAG, "Biometric login button GONE because no last user UID.")
-            Log.d(TAG, "----------------------------------------------------------------")
+            Log.d(tag, "----------------------------------------------------------------")
             return
         }
 
         val enabledKeyName = lastUserIsBiometricEnabledKey
         val rsaKeyAliasName = lastUserBioKeyAlias
-
-        Log.d(TAG, "2. Resolved for UID '$currentLastUserUid':")
-        Log.d(TAG, "   enabledKeyName = '$enabledKeyName'")
-        Log.d(TAG, "   rsaKeyAliasName = '$rsaKeyAliasName'")
+        Log.d(
+            tag,
+            "2. Resolved for UID '$currentLastUserUid': enabledKeyName = '$enabledKeyName', rsaKeyAliasName = '$rsaKeyAliasName'"
+        )
 
         if (enabledKeyName != null && rsaKeyAliasName != null) {
             val isEnabled = prefs.getBoolean(enabledKeyName, false)
-            Log.d(
-                TAG,
-                "3. Value of 'isEnabled' flag from SharedPreferences (for key '$enabledKeyName'): $isEnabled"
-            )
+            Log.d(tag, "3. Value of 'isEnabled' flag from SharedPreferences: $isEnabled")
 
             if (isEnabled) {
-                Log.d(TAG, "4. Biometric 'isEnabled' flag is TRUE for user '$currentLastUserUid'.")
-                Log.d(TAG, "   Proceeding to check BiometricManager.canAuthenticate().")
-
+                Log.d(tag, "4. Biometric 'isEnabled' flag is TRUE for user '$currentLastUserUid'.")
                 val biometricManager = BiometricManager.from(this)
                 val canAuth = biometricManager.canAuthenticate(
                     BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
                 )
                 Log.d(
-                    TAG,
+                    tag,
                     "5. Result of 'BiometricManager.canAuthenticate()': $canAuth (SUCCESS is ${BiometricManager.BIOMETRIC_SUCCESS})"
                 )
 
                 if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
-                    Log.i(
-                        TAG,
-                        "SUCCESS: All conditions met for user '$currentLastUserUid'. Biometric login button should be VISIBLE."
-                    )
-                    setupBiometricLoginComponents() // Ensure this function doesn't hide the button
-                    binding.buttonBiometricLogin.visibility = View.VISIBLE
-                    Log.d(TAG, "Biometric login button VISIBLE.")
+                    Log.i(tag, "SUCCESS: All conditions met. Setting up biometric components.")
+                    setupBiometricLoginComponents() // This function will also set the button listener
+                    binding.buttonBiometricLogin.visibility = View.VISIBLE // Make button visible
+                    binding.buttonBiometricLogin.isEnabled = true // Ensure it's enabled
+                    Log.d(tag, "Biometric login button VISIBLE and ENABLED.")
                 } else {
-                    Log.w(
-                        TAG,
-                        "   BiometricManager.canAuthenticate() FAILED. Code: $canAuth. Biometric login button will be GONE."
-                    )
-                    Log.w(
-                        TAG,
-                        "   Possible reasons: No biometrics enrolled, hardware not supported, or other error."
-                    )
+                    Log.w(tag, "   BiometricManager.canAuthenticate() FAILED. Code: $canAuth.")
                     binding.buttonBiometricLogin.visibility = View.GONE
-                    Log.d(TAG, "Biometric login button GONE due to canAuthenticate failure.")
+                    Log.d(tag, "Biometric login button GONE due to canAuthenticate failure.")
                 }
             } else {
                 Log.w(
-                    TAG,
-                    "   Biometric 'isEnabled' flag is FALSE for user '$currentLastUserUid' (for key '$enabledKeyName'). Biometric login button will be GONE."
+                    tag,
+                    "   Biometric 'isEnabled' flag is FALSE. Biometric login button will be GONE."
                 )
                 binding.buttonBiometricLogin.visibility = View.GONE
-                Log.d(TAG, "Biometric login button GONE because 'isEnabled' is false.")
             }
         } else {
             Log.w(
-                TAG,
-                "   'enabledKeyName' ('$enabledKeyName') or 'rsaKeyAliasName' ('$rsaKeyAliasName') is null. This usually means 'currentLastUserUid' was not correctly used to derive them. Biometric login button will be GONE."
+                tag,
+                "   'enabledKeyName' or 'rsaKeyAliasName' is null. Biometric login button will be GONE."
             )
             binding.buttonBiometricLogin.visibility = View.GONE
-            Log.d(TAG, "Biometric login button GONE because key names are null.")
         }
-        Log.d(TAG, "----------------------------------------------------------------")
+        Log.d(tag, "----------------------------------------------------------------")
     }
 
     private fun setupBiometricLoginComponents() {
-        Log.d(TAG, "setupBiometricLoginComponents CALLED")
+        Log.d(tag, "setupBiometricLoginComponents CALLED")
         if (!::executor.isInitialized) {
             executor = ContextCompat.getMainExecutor(this)
         }
-
 
         biometricPromptLogin = BiometricPrompt(
             this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    Log.e(TAG, "LOGIN Biometric AuthError. Code: $errorCode, Msg: $errString")
+                    Log.e(tag, "LOGIN Biometric AuthError. Code: $errorCode, Msg: $errString")
                     Toast.makeText(
                         applicationContext,
-                        "Biometric error: $errString",
+                        "Eroare biometrică: $errString",
                         Toast.LENGTH_SHORT
                     ).show()
+                    enableLoginUI(true) // Ensure UI is re-enabled on error
 
                     val currentRsaKeyAlias = lastUserBioKeyAlias
                     if (currentRsaKeyAlias != null) {
                         var shouldInvalidate = false
                         when (errorCode) {
-                            BiometricPrompt.ERROR_VENDOR -> {
-                                Log.w(
-                                    TAG,
-                                    "BiometricPrompt.ERROR_VENDOR ($errString). May indicate key issue."
-                                )
-                                shouldInvalidate = true
-                            }
-
+                            BiometricPrompt.ERROR_VENDOR,
                             BiometricPrompt.ERROR_HW_UNAVAILABLE,
                             BiometricPrompt.ERROR_NO_BIOMETRICS,
                             BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
                                 Log.w(
-                                    TAG,
-                                    "Biometric error code $errorCode suggests potential key issue or persistent problem."
+                                    tag,
+                                    "Biometric error code $errorCode ($errString) triggers potential key invalidation."
                                 )
                                 shouldInvalidate = true
                             }
                         }
-
                         if (shouldInvalidate) {
                             Log.w(
-                                TAG,
-                                "Auth error ($errorCode) triggers invalidation for key: $currentRsaKeyAlias"
+                                tag,
+                                "Handling invalidated key for: $currentRsaKeyAlias due to auth error $errorCode"
                             )
                             handleInvalidatedBiometricKey(currentRsaKeyAlias)
                         }
@@ -523,23 +561,25 @@ class LoginActivity : AppCompatActivity() {
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    Log.i(TAG, "LOGIN Biometric Authentication Succeeded.")
+                    Log.i(tag, "LOGIN Biometric Authentication Succeeded.")
+                    // UI will be handled by decryptAndSignIn or subsequent flows
                     val cryptoObject = result.cryptoObject
                     if (cryptoObject?.cipher != null) {
-                        Log.d(TAG, "Cipher object retrieved from AuthenticationResult for login.")
-                        decryptAndSignIn(cryptoObject.cipher!!) // Pass the unlocked RSA cipher
+                        Log.d(tag, "Cipher object retrieved from AuthenticationResult for login.")
+                        binding.progressBarLogin.visibility =
+                            View.VISIBLE // Show progress for decryption/sign-in
+                        disableLoginUIWhileChecking() // Disable UI during this process
+                        decryptAndSignIn(cryptoObject.cipher!!)
                     } else {
-                        Log.e(
-                            TAG,
-                            "LOGIN Biometric Auth Succeeded, but Cipher object was null in CryptoObject!"
-                        )
+                        Log.e(tag, "LOGIN Biometric Auth Succeeded, but Cipher object was null!")
                         Toast.makeText(
                             applicationContext,
-                            "Authentication succeeded but failed to get cipher.",
+                            "Autentificarea a reușit, dar nu a reușit să obțină cifru.",
                             Toast.LENGTH_SHORT
                         ).show()
+                        enableLoginUI(true)
                         lastUserBioKeyAlias?.let {
-                            Log.e(TAG, "Cipher was null, invalidating key $it")
+                            Log.e(tag, "Cipher was null, invalidating key $it")
                             handleInvalidatedBiometricKey(it)
                         }
                     }
@@ -547,9 +587,10 @@ class LoginActivity : AppCompatActivity() {
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    Log.w(TAG, "LOGIN Biometric Authentication Failed (e.g., wrong fingerprint).")
-                    Toast.makeText(applicationContext, "Authentication failed.", Toast.LENGTH_SHORT)
+                    Log.w(tag, "LOGIN Biometric Authentication Failed (e.g., wrong fingerprint).")
+                    Toast.makeText(applicationContext, "Autentificarea a eșuat.", Toast.LENGTH_SHORT)
                         .show()
+                    enableLoginUI(true) // Re-enable UI
                 }
             })
 
@@ -558,57 +599,57 @@ class LoginActivity : AppCompatActivity() {
             .setSubtitle(getString(R.string.biometric_login_subtitle))
             .setNegativeButtonText(getString(android.R.string.cancel))
             .build()
-        Log.d(TAG, "biometricPromptLogin and promptInfoLogin INITIALIZED.")
+
         binding.buttonBiometricLogin.setOnClickListener {
-            Log.d(TAG, "buttonBiometricLogin CLICKED!")
+            Log.d(tag, "buttonBiometricLogin CLICKED!")
             attemptBiometricLogin()
         }
-        Log.d(TAG, "OnClickListener set for buttonBiometricLogin.")
+        Log.d(tag, "biometricPromptLogin, promptInfoLogin INITIALIZED. Click listener SET.")
     }
 
-    private fun attemptBiometricLogin() {
-        Log.d(TAG, "----------------------------------------------------")
-        Log.d(TAG, "attemptBiometricLogin CALLED")
 
-        val rsaKeyAliasForLogin = lastUserBioKeyAlias // Property access
-        Log.d(TAG, "1. rsaKeyAliasForLogin retrieved: '$rsaKeyAliasForLogin'")
+    private fun attemptBiometricLogin() {
+        Log.d(tag, "----------------------------------------------------")
+        Log.d(tag, "attemptBiometricLogin CALLED")
+
+        val rsaKeyAliasForLogin = lastUserBioKeyAlias
+        Log.d(tag, "1. rsaKeyAliasForLogin retrieved: '$rsaKeyAliasForLogin'")
 
         if (rsaKeyAliasForLogin == null) {
-            Log.e(TAG, "   ERROR: rsaKeyAliasForLogin is null. Cannot attempt biometric login.")
+            Log.e(tag, "   ERROR: rsaKeyAliasForLogin is null. Cannot attempt biometric login.")
             Toast.makeText(
                 this,
-                "Biometric key alias not found. Please set up biometrics again.",
+                "Alias-ul cheii biometrice nu a fost găsită. Vă rugăm să configurați din nou biometria.",
                 Toast.LENGTH_LONG
             ).show()
             binding.buttonBiometricLogin.visibility = View.GONE
-            Log.d(TAG, "----------------------------------------------------")
+            enableLoginUI(true)
+            Log.d(tag, "----------------------------------------------------")
             return
         }
 
         if (!::biometricPromptLogin.isInitialized || !::promptInfoLogin.isInitialized) {
-            Log.e(
-                TAG,
-                "   ERROR: biometricPromptLogin or promptInfoLogin is NOT initialized! Attempting to re-initialize."
+            Log.w(
+                tag,
+                "   WARN: biometricPromptLogin or promptInfoLogin NOT initialized! Re-initializing."
             )
-            Toast.makeText(this, "Biometric components not ready. Please wait.", Toast.LENGTH_SHORT)
-                .show()
-            setupBiometricLoginComponents()
-            if (!::biometricPromptLogin.isInitialized || !::promptInfoLogin.isInitialized) {
-                Log.e(TAG, "   FATAL ERROR: Re-initialization of biometric components failed!")
+            setupBiometricLoginComponents() // Attempt to re-initialize
+            if (!::biometricPromptLogin.isInitialized || !::promptInfoLogin.isInitialized) { // Check again
+                Log.e(tag, "   FATAL ERROR: Re-initialization of biometric components failed!")
                 Toast.makeText(
                     this,
-                    "Biometric login unavailable. Please restart.",
+                    "Conectare biometrică indisponibilă. Vă rugăm să reporniți.",
                     Toast.LENGTH_LONG
                 ).show()
                 binding.buttonBiometricLogin.visibility = View.GONE
-                Log.d(TAG, "----------------------------------------------------")
+                enableLoginUI(true)
+                Log.d(tag, "----------------------------------------------------")
                 return
             }
-            Log.d(TAG, "   Biometric components re-initialized successfully.")
         }
 
         Log.d(
-            TAG,
+            tag,
             "2. Attempting to get initialized RSA cipher for symmetric key decryption using alias: '$rsaKeyAliasForLogin'"
         )
         try {
@@ -618,94 +659,118 @@ class LoginActivity : AppCompatActivity() {
                 )
 
             if (rsaCipherForSymmetricKeyDecryption != null) {
-                Log.i(TAG, "3. Successfully got RSA cipher for symmetric key decryption.")
-                Log.d(
-                    TAG,
-                    "4. Calling biometricPromptLogin.authenticate() with CryptoObject for RSA key."
+                Log.i(
+                    tag,
+                    "3. Successfully got RSA cipher. Calling biometricPromptLogin.authenticate()."
                 )
+                // Disable UI elements just before showing the prompt
+                enableLoginUI(false) // This will disable the biometric button too temporarily
+                binding.progressBarLogin.visibility =
+                    View.GONE // Ensure progress bar is hidden for the prompt itself
                 biometricPromptLogin.authenticate(
                     promptInfoLogin,
                     BiometricPrompt.CryptoObject(rsaCipherForSymmetricKeyDecryption)
                 )
-                Log.d(TAG, "   biometricPromptLogin.authenticate() called for login.")
             } else {
                 Log.e(
-                    TAG,
-                    "   ERROR: Failed to get RSA cipher for symmetric key decryption (it was null). Key Alias: '$rsaKeyAliasForLogin'."
+                    tag,
+                    "   ERROR: Failed to get RSA cipher (it was null). Key Alias: '$rsaKeyAliasForLogin'."
                 )
                 Toast.makeText(
                     this,
-                    "Biometric login error. Key may be invalid or need reset.",
+                    "Eroare de autentificare biometrică. Cheia poate fi invalidă.",
                     Toast.LENGTH_LONG
                 ).show()
+                enableLoginUI(true)
                 handleInvalidatedBiometricKey(rsaKeyAliasForLogin)
             }
         } catch (e: Exception) {
             Log.e(
-                TAG,
+                tag,
                 "   EXCEPTION during attemptBiometricLogin for alias '$rsaKeyAliasForLogin'",
                 e
             )
-            Toast.makeText(this, "An error occurred preparing biometric login.", Toast.LENGTH_SHORT)
+            Toast.makeText(this, "A apărut o eroare de pregătire a autentificării biometrice.", Toast.LENGTH_SHORT)
                 .show()
+            enableLoginUI(true)
             if (e is KeyPermanentlyInvalidatedException || e.cause is KeyPermanentlyInvalidatedException) {
-                Log.w(
-                    TAG,
-                    "   KeyPermanentlyInvalidatedException caught directly in attemptBiometricLogin, handling."
-                )
+                Log.w(tag, "   KeyPermanentlyInvalidatedException caught, handling.")
                 handleInvalidatedBiometricKey(rsaKeyAliasForLogin)
             }
         }
-        Log.d(TAG, "----------------------------------------------------")
+        Log.d(tag, "----------------------------------------------------")
     }
 
+
     private fun handleInvalidatedBiometricKey(keyAlias: String) {
-        Log.w(TAG, "handleInvalidatedBiometricKey called for alias: $keyAlias")
+        Log.w(tag, "handleInvalidatedBiometricKey called for alias: $keyAlias")
         val prefs = this.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val uid = keyAlias.removePrefix(PREF_KEY_BIOMETRIC_KEY_ALIAS_PREFIX)
 
         if (uid.isNotEmpty() && keyAlias.startsWith(PREF_KEY_BIOMETRIC_KEY_ALIAS_PREFIX)) {
-            Log.d(TAG, "Invalidating biometric data for UID: $uid (derived from alias $keyAlias)")
+            Log.d(tag, "Invalidating biometric data for UID: $uid")
+            // Use the correct SharedPreferences keys for the encrypted payload
+            val symKeyPref = "${PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX}$uid"
+            val ivPref = "${PREF_USERDATA_ENCRYPTED_IV_PREFIX}$uid"
+            val dataPref = "${PREF_USERDATA_ENCRYPTED_DATA_PREFIX}$uid"
+            val enabledPref = "${PREF_IS_BIOMETRIC_ENABLED_PREFIX}$uid"
+
             prefs.edit()
-                .remove("${PREF_IS_BIOMETRIC_ENABLED_PREFIX}$uid") // This one is likely fine as it's specific
-                // Use the _userdata_ keys for the encrypted payload
-                .remove("bio_enc_sym_key_userdata_$uid") // Explicitly construct or use the correct _userdata_ getter
-                .remove("bio_iv_userdata_$uid")
-                .remove("bio_enc_data_userdata_$uid")
+                .remove(enabledPref)
+                .remove(symKeyPref)
+                .remove(ivPref)
+                .remove(dataPref)
                 .apply()
+            Log.d(tag, "Removed prefs: $enabledPref, $symKeyPref, $ivPref, $dataPref")
         } else {
             Log.w(
-                TAG,
+                tag,
                 "Could not reliably derive UID from alias '$keyAlias' to clear specific prefs. Only deleting Keystore key."
             )
         }
 
-        BiometricCryptographyManager.deleteInvalidKey(keyAlias) // Delete from Android Keystore
+        BiometricCryptographyManager.deleteInvalidKey(keyAlias)
         binding.buttonBiometricLogin.visibility = View.GONE
-        Toast.makeText(
-            this,
-            "Biometric login has been disabled due to a settings change or error. Please use your password.",
-            Toast.LENGTH_LONG
-        ).show()
-        Log.d(TAG, "Biometric login button GONE after key invalidation for alias $keyAlias.")
+        binding.buttonBiometricLogin.isEnabled = false // Explicitly disable
+        Toast.makeText(this, "Conectare biometrică dezactivată. Vă rugăm să utilizați parola.", Toast.LENGTH_LONG)
+            .show()
+        Log.d(tag, "Biometric login button GONE after key invalidation for alias $keyAlias.")
     }
 
-    private fun decryptAndSignIn(rsaCipherForSymmetricKey: Cipher) {
-        Log.d(TAG, "decryptAndSignIn: called with biometric-unlocked RSA Cipher.")
-        val prefs = this.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
+    private fun decryptAndSignIn(rsaCipherForSymmetricKey: Cipher) {
+        Log.d(tag, "decryptAndSignIn: called with biometric-unlocked RSA Cipher.")
+        // Progress bar should be visible, UI disabled by caller (onAuthenticationSucceeded)
+
+        val prefs = this.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val currentUid = this.lastUserUid // Get UID first
+
+        if (currentUid == null) {
+            Log.e(tag, "decryptAndSignIn: lastUserUid is null. Cannot proceed.")
+            Toast.makeText(
+                this,
+                "Eroare la sesiune biometrică. Vă rugăm să vă conectați manual.",
+                Toast.LENGTH_LONG
+            ).show()
+            binding.progressBarLogin.visibility = View.GONE
+            enableLoginUI(true)
+            return
+        }
+
+        // Use currentUid to construct the correct preference keys
         val encSymmetricKey =
-            lastUserEncryptedSymmetricKeyUserDataPrefKey?.let { prefs.getString(it, null) }
-        val iv = lastUserIvUserDataPrefKey?.let { prefs.getString(it, null) }
-        val encData = lastUserEncryptedUserDataPrefKey?.let { prefs.getString(it, null) }
+            prefs.getString("${PREF_USERDATA_ENCRYPTED_SYM_KEY_PREFIX}$currentUid", null)
+        val iv = prefs.getString("${PREF_USERDATA_ENCRYPTED_IV_PREFIX}$currentUid", null)
+        val encData = prefs.getString("${PREF_USERDATA_ENCRYPTED_DATA_PREFIX}$currentUid", null)
+
 
         var decryptedEmail: String? = null
-        var decryptedIdToken: String? = null // For the ID Token
+        var decryptedIdToken: String? = null
 
         if (encSymmetricKey != null && iv != null && encData != null) {
             Log.d(
-                TAG,
-                "Found all components for UserData decryption in SharedPreferences for UID: ${this.lastUserUid}"
+                tag,
+                "Found all components for UserData decryption in SharedPreferences for UID: $currentUid"
             )
             val encryptedPayload =
                 BiometricCryptographyManager.EncryptedPayload(encSymmetricKey, iv, encData)
@@ -715,153 +780,132 @@ class LoginActivity : AppCompatActivity() {
             )
 
             if (decryptedJsonData != null) {
-                Log.i(
-                    TAG,
-                    "Stored UserData JSON decrypted successfully. Raw JSON (first 100 chars): ${
-                        decryptedJsonData.take(100)
-                    }"
-                ) // Log raw JSON
+                Log.i(tag, "Stored UserData JSON decrypted successfully for UID: $currentUid")
                 try {
                     val userData = JSONObject(decryptedJsonData)
                     decryptedEmail = userData.optString("email", null)
+                    decryptedIdToken = userData.optString(
+                        "idToken",
+                        null
+                    ) // Be cautious if idToken can be explicitly null vs. not present
 
-                    // --- DETAILED ID TOKEN RETRIEVAL ---
-                    Log.d(TAG, "Attempting to retrieve 'idToken' from decrypted JSON.")
-                    if (userData.has("idToken")) {
-                        val rawIdTokenValue = userData.get("idToken") // Get raw value
-                        Log.d(
-                            TAG,
-                            "'idToken' key exists in JSON. Raw Type: ${rawIdTokenValue?.javaClass?.name}, Value (first 10 if string): ${
-                                rawIdTokenValue?.toString()?.take(10)
-                            }"
+                    if (decryptedIdToken.isNullOrEmpty()) { // More robust check
+                        decryptedIdToken =
+                            null // Ensure it's null if empty or actually "null" string from JSON
+                        Log.w(
+                            tag,
+                            "Decrypted 'idToken' is null or empty from JSON for UID: $currentUid."
                         )
-                        if (rawIdTokenValue is String && rawIdTokenValue.isNotEmpty()) {
-                            decryptedIdToken = rawIdTokenValue // Assign if it's a non-empty string
-                            Log.d(TAG, "Successfully extracted non-empty idToken from JSON.")
-                        } else if (rawIdTokenValue == null || JSONObject.NULL.equals(rawIdTokenValue) || (rawIdTokenValue is String && rawIdTokenValue.isEmpty())) {
-                            Log.w(
-                                TAG,
-                                "'idToken' value is null, JSON.NULL, or empty string in JSON."
-                            )
-                            decryptedIdToken = null // Explicitly set to null
-                        } else {
-                            Log.w(
-                                TAG,
-                                "'idToken' value is not a string or is an unexpected type: ${rawIdTokenValue?.javaClass?.name}. Treating as not found."
-                            )
-                            decryptedIdToken = null // Treat as not found
-                        }
                     } else {
-                        Log.w(TAG, "'idToken' key NOT FOUND in decrypted UserData JSON.")
-                        decryptedIdToken = null // Explicitly set to null if key doesn't exist
+                        Log.d(tag, "Successfully extracted idToken from JSON for UID: $currentUid.")
                     }
-                    // --- END OF DETAILED ID TOKEN RETRIEVAL ---
-
-
                     if (decryptedEmail != null) {
-                        Log.d(TAG, "Decrypted email from JSON: $decryptedEmail")
-                    } else {
-                        Log.w(TAG, "Email not found or was null in decrypted UserData JSON.")
-                    }
-
-                    // Log final state of decryptedIdToken after attempting to parse
-                    if (decryptedIdToken != null) {
                         Log.d(
-                            TAG,
-                            "ID Token from JSON seems valid (sensitive, only logging presence)."
+                            tag,
+                            "Decrypted email from JSON: $decryptedEmail for UID: $currentUid"
                         )
                     } else {
-                        Log.w(TAG, "ID Token from JSON is NULL or EMPTY after parsing attempts.")
+                        Log.w(
+                            tag,
+                            "Email not found or was null in decrypted UserData JSON for UID: $currentUid."
+                        )
                     }
 
                 } catch (e: JSONException) {
-                    Log.e(TAG, "Failed to parse decrypted UserData JSON", e)
-                    decryptedIdToken = null // Ensure it's null on error
+                    Log.e(tag, "Failed to parse decrypted UserData JSON for UID: $currentUid", e)
+                    decryptedIdToken = null
                     decryptedEmail = null
+                    // UI handling below
                 }
             } else {
-                Log.e(TAG, "Failed to decrypt stored UserData for UID: ${this.lastUserUid}.")
-                Toast.makeText(this, "Failed to decrypt stored credentials.", Toast.LENGTH_LONG)
+                Log.e(tag, "Failed to decrypt stored UserData for UID: $currentUid.")
+                Toast.makeText(this, "Nu a reușit să decripteze acreditările stocate.", Toast.LENGTH_LONG)
                     .show()
+                binding.progressBarLogin.visibility = View.GONE
+                enableLoginUI(true)
                 lastUserBioKeyAlias?.let {
-                    Log.e(TAG, "Decryption failed, invalidating key $it")
+                    Log.e(tag, "Decryption failed, invalidating key $it for UID $currentUid")
                     handleInvalidatedBiometricKey(it)
                 }
                 return
             }
         } else {
             Log.w(
-                TAG,
-                "Missing one or more components for UserData decryption for UID: ${this.lastUserUid}."
+                tag,
+                "Missing one or more components for UserData decryption for UID: $currentUid."
             )
+            Toast.makeText(this, "Date biometrice incomplete. Vă rugăm să vă conectați.", Toast.LENGTH_LONG)
+                .show()
+            binding.progressBarLogin.visibility = View.GONE
+            enableLoginUI(true)
+            lastUserBioKeyAlias?.let { // It's possible the data is missing but key exists
+                handleInvalidatedBiometricKey(it) // Invalidate to force re-setup
+            }
             return
         }
 
-        Toast.makeText(this, "Biometric recognized!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Biometrice recunoscute!", Toast.LENGTH_SHORT).show()
 
         val currentAuthUser = auth.currentUser
-        if (currentAuthUser != null && currentAuthUser.uid == this.lastUserUid) {
-            Log.d(
-                TAG,
-                "Biometric recognized. Firebase user already active and matches. Checking role..."
-            )
-            // User session is active, directly check claims.
+        if (currentAuthUser != null && currentAuthUser.uid == currentUid) {
+            Log.d(tag, "Biometric: Firebase user active & matches ($currentUid). Checking role...")
+            // UI elements (progress bar, buttons) are handled by handleSuccessfulLoginWithRoleCheck
             handleSuccessfulLoginWithRoleCheck(currentAuthUser)
         } else {
             Log.d(
-                TAG,
-                "Biometric recognized. Firebase session not active or user mismatch. Current UID: ${currentAuthUser?.uid}, Expected UID: ${this.lastUserUid}"
+                tag,
+                "Biometric: Firebase session not active or user mismatch. Current Auth UID: ${currentAuthUser?.uid}, Expected UID: $currentUid"
             )
 
-            if (!decryptedIdToken.isNullOrEmpty() && this.lastUserUid != null) {
+            if (!decryptedIdToken.isNullOrEmpty() && currentUid != null) {
                 Log.d(
-                    TAG,
-                    "Attempting to exchange ID token for custom token via Cloud Function for UID: ${this.lastUserUid}"
+                    tag,
+                    "Attempting ID token exchange for custom token via Cloud Function for UID: $currentUid"
                 )
-                val data = hashMapOf("idToken" to decryptedIdToken, "uid" to this.lastUserUid)
+                val data = hashMapOf("idToken" to decryptedIdToken, "uid" to currentUid)
 
-                binding.progressBarLogin.visibility = View.VISIBLE // Show progress for cloud call
-                enableLoginUI(false)
-
+                // Progress bar should already be visible, UI disabled from onAuthenticationSucceeded
                 functions.getHttpsCallable("exchangeIdTokenForCustomToken")
                     .call(data)
                     .addOnCompleteListener { task ->
-                        // binding.progressBarLogin.visibility = View.GONE; // Moved to handleSuccessfulLoginWithRoleCheck
-                        // enableLoginUI(true); // Moved
+                        // handleSuccessfulLoginWithRoleCheck will manage UI (progress bar, buttons)
                         if (task.isSuccessful) {
                             val result = task.result?.data as? Map<String, Any>
                             val customToken = result?.get("customToken") as? String
                             if (customToken != null) {
-                                Log.d(TAG, "Successfully received custom token from backend.")
+                                Log.d(
+                                    tag,
+                                    "Successfully received custom token for UID: $currentUid."
+                                )
                                 auth.signInWithCustomToken(customToken)
                                     .addOnCompleteListener(this) { signInTask ->
                                         if (signInTask.isSuccessful) {
                                             signInTask.result?.user?.let { firebaseUser ->
                                                 Log.d(
-                                                    TAG,
+                                                    tag,
                                                     "Firebase signInWithCustomToken success for UID: ${firebaseUser.uid}. Checking role..."
                                                 )
-                                                handleSuccessfulLoginWithRoleCheck(firebaseUser) // <<< CALL ROLE CHECK HERE
+                                                handleSuccessfulLoginWithRoleCheck(firebaseUser)
                                             } ?: run {
+                                                Log.e(
+                                                    tag,
+                                                    "signInWithCustomToken success but user is null (UID: $currentUid)."
+                                                )
                                                 binding.progressBarLogin.visibility = View.GONE
                                                 enableLoginUI(true)
-                                                Log.e(
-                                                    TAG,
-                                                    "signInWithCustomToken success but user is null."
-                                                )
                                                 promptForManualLogin(
                                                     decryptedEmail,
                                                     "Session refresh error. Please sign in."
                                                 )
                                             }
                                         } else {
-                                            binding.progressBarLogin.visibility = View.GONE
-                                            enableLoginUI(true)
                                             Log.w(
-                                                TAG,
-                                                "Firebase signInWithCustomToken failed.",
+                                                tag,
+                                                "Firebase signInWithCustomToken failed for UID: $currentUid.",
                                                 signInTask.exception
                                             )
+                                            binding.progressBarLogin.visibility = View.GONE
+                                            enableLoginUI(true)
                                             promptForManualLogin(
                                                 decryptedEmail,
                                                 "Couldn't complete sign in. Please try again."
@@ -869,19 +913,20 @@ class LoginActivity : AppCompatActivity() {
                                         }
                                     }
                             } else {
+                                Log.e(
+                                    tag,
+                                    "Custom token was null in backend response for UID: $currentUid."
+                                )
                                 binding.progressBarLogin.visibility = View.GONE
                                 enableLoginUI(true)
-                                Log.e(TAG, "Custom token was null in the backend response.")
                                 promptForManualLogin(
                                     decryptedEmail,
                                     "Session refresh failed (no token). Please sign in."
                                 )
                             }
                         } else {
-                            binding.progressBarLogin.visibility = View.GONE
-                            enableLoginUI(true)
                             val e = task.exception
-                            Log.w(TAG, "Backend token exchange via Cloud Function failed.", e)
+                            Log.w(tag, "Backend token exchange failed for UID: $currentUid.", e)
                             var errorMessage = "Session refresh failed. Please sign in."
                             if (e is FirebaseFunctionsException) {
                                 errorMessage = when (e.code) {
@@ -890,16 +935,18 @@ class LoginActivity : AppCompatActivity() {
                                     else -> "Error refreshing session (${e.code}). Please sign in."
                                 }
                             }
+                            binding.progressBarLogin.visibility = View.GONE
+                            enableLoginUI(true)
                             promptForManualLogin(decryptedEmail, errorMessage)
                         }
                     }
             } else {
-                binding.progressBarLogin.visibility = View.GONE // Ensure progress is hidden
-                enableLoginUI(true) // Ensure UI is enabled
                 Log.w(
-                    TAG,
-                    "Skipping Cloud Function. Reason: decryptedIdToken is null/empty OR lastUserUid is null. Token (present): ${!decryptedIdToken.isNullOrEmpty()}, UID: '${this.lastUserUid}'"
+                    tag,
+                    "Skipping Cloud Function for UID: $currentUid. Reason: ID Token is null/empty ('$decryptedIdToken') or UID issue."
                 )
+                binding.progressBarLogin.visibility = View.GONE
+                enableLoginUI(true)
                 promptForManualLogin(
                     decryptedEmail,
                     "Biometric data incomplete. Please sign in with your password."
@@ -908,114 +955,107 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // Ensure you have this helper function (or similar)
+
     private fun promptForManualLogin(email: String?, message: String) {
         var feedbackMessage = message
         if (email != null) {
             binding.editTextEmailLogin.setText(email)
-            Log.d(TAG, "Pre-filled email with: $email")
-            // Optionally, make the message more specific if email is pre-filled
-            // feedbackMessage = "Welcome back! $message" // Or similar
+            Log.d(tag, "Pre-filled email with: $email")
         }
-
-        // binding.textViewLoginFeedback.text = feedbackMessage // If you have a feedback TextView
-        // binding.textViewLoginFeedback.visibility = View.VISIBLE
-        binding.editTextPasswordLogin.requestFocus() // Focus password field
-        Toast.makeText(this, feedbackMessage, Toast.LENGTH_LONG).show() // Or use a TextView
-        Log.i(
-            TAG,
-            "User needs to re-authenticate fully. UI updated for manual login. Message: $feedbackMessage"
-        )
+        binding.editTextPasswordLogin.requestFocus()
+        Toast.makeText(this, feedbackMessage, Toast.LENGTH_LONG).show()
+        Log.i(tag, "Solicitarea de autentificare manuală. Mesaj: $feedbackMessage")
+        // Ensure UI is enabled for manual input if not already
+        enableLoginUI(true)
+        binding.progressBarLogin.visibility = View.GONE // Ensure progress is hidden
     }
 
 
-    // ... (rest of LoginActivity: navigateToMainApp, email/password login, Google sign-in etc.)
     override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
         data: Intent?
-    ) { // Add this if you use startActivityForResult for BIOMETRIC_ERROR_NONE_ENROLLED
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
-        // Check your request code for biometric enrollment if you implemented that
+        // This is usually for things like BIOMETRIC_ERROR_NONE_ENROLLED if you redirect to settings.
+        // For the new Credential Manager, this is less common for the sign-in flow itself.
     }
 
 
     private fun showForgotPasswordDialog() {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Reseteaza parola") // Use string resource
-        val view =
-            layoutInflater.inflate(R.layout.dialog_forgot_password, null) // Create this layout
-        val editTextEmail =
-            view.findViewById<EditText>(R.id.editTextEmailReset) // ID from your dialog layout
+        builder.setTitle(getString(R.string.reset_password_title))
+        val view = layoutInflater.inflate(R.layout.dialog_forgot_password, null)
+        val editTextEmail = view.findViewById<EditText>(R.id.editTextEmailReset)
         builder.setView(view)
 
-        builder.setPositiveButton("Reset") { _, _ -> // Use string resource
+        builder.setPositiveButton(getString(R.string.reset_button_text)) { _, _ ->
             val email = editTextEmail.text.toString().trim()
             if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Adresa de email invalida.", Toast.LENGTH_SHORT)
-                    .show() // Use string resource
+                Toast.makeText(this, getString(R.string.invalid_email_address), Toast.LENGTH_SHORT)
+                    .show()
                 return@setPositiveButton
             }
             sendPasswordResetInstructions(email)
         }
-        builder.setNegativeButton("Cancel") { dialog, _ -> // Use string resource
+        builder.setNegativeButton(getString(android.R.string.cancel)) { dialog, _ ->
             dialog.dismiss()
         }
         builder.create().show()
     }
 
     private fun sendPasswordResetInstructions(email: String) {
-        if (!isNetworkAvailable()) { // Assuming you have this function
-            Toast.makeText(this, "Fara conexiune la internet.", Toast.LENGTH_LONG)
-                .show() // Use string resource
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, getString(R.string.no_internet_connection), Toast.LENGTH_LONG)
+                .show()
             return
         }
 
-        binding.progressBarLogin.visibility = View.VISIBLE // Show progress
+        binding.progressBarLogin.visibility = View.VISIBLE
+        enableLoginUI(false)
 
         auth.sendPasswordResetEmail(email)
             .addOnCompleteListener { task ->
-                binding.progressBarLogin.visibility = View.GONE // Hide progress
+                binding.progressBarLogin.visibility = View.GONE
+                enableLoginUI(true)
                 if (task.isSuccessful) {
-                    Log.d(TAG, "Password reset email sent to $email")
+                    Log.d(tag, "Password reset email sent to $email")
                     Toast.makeText(
                         this,
-                        "Instructiuni de resetare a parolei au fost trimise pe email.",
+                        getString(R.string.password_reset_email_sent_message),
                         Toast.LENGTH_LONG
-                    ).show() // Use string resource
+                    ).show()
                 } else {
-                    Log.w(TAG, "sendPasswordResetEmail:failure", task.exception)
+                    Log.w(tag, "sendPasswordResetEmail:failure", task.exception)
                     Toast.makeText(
                         this,
-                        "Nu s-a putut trimite cererea de resetare a parolei: ${task.exception?.message}",
+                        getString(
+                            R.string.password_reset_failed_message,
+                            task.exception?.message ?: "Unknown error"
+                        ),
                         Toast.LENGTH_LONG
-                    ).show() // Use string resource
+                    ).show()
                 }
             }
     }
 
     private fun firebaseAuthWithGoogle(idToken: String) {
-        Log.d(TAG, "Attempting Firebase authentication with Google ID token.")
-        // binding.progressBarLogin.visibility = View.VISIBLE // Moved
+        Log.d(tag, "Attempting Firebase authentication with Google ID token.")
+        // Progress bar should be visible and UI disabled by the Google Sign-In click handler
 
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
-                // binding.progressBarLogin.visibility = View.GONE // Moved
-
+                // handleSuccessfulLoginWithRoleCheck or the failure path below will handle UI
                 if (task.isSuccessful) {
-                    Log.d(TAG, "Firebase signInWithCredential success. Checking role...")
+                    Log.d(tag, "Firebase signInWithCredential success. Checking role...")
                     val user = auth.currentUser
                     user?.let {
-                        // TODO: Check if user is new and save details to Firestore if needed (BEFORE role check if role depends on Firestore doc)
-                        // if this is their first time signing in with Google, you might want to create their Firestore doc here.
-                        // If operator status is ONLY from custom claims, this can be done after.
-                        // checkAndSaveGoogleUserDetails(it)
                         handleSuccessfulLoginWithRoleCheck(it)
                     } ?: run {
-                        binding.progressBarLogin.visibility = View.GONE // Hide if user is null
+                        binding.progressBarLogin.visibility = View.GONE
                         enableLoginUI(true)
-                        Log.e(TAG, "Google Sign-In success but Firebase user is null.")
+                        Log.e(tag, "Google Sign-In success but Firebase user is null.")
                         Toast.makeText(
                             this,
                             "Google Sign-In failed to link to Firebase user.",
@@ -1023,9 +1063,9 @@ class LoginActivity : AppCompatActivity() {
                         ).show()
                     }
                 } else {
-                    binding.progressBarLogin.visibility = View.GONE // Hide on failure
+                    binding.progressBarLogin.visibility = View.GONE
                     enableLoginUI(true)
-                    Log.w(TAG, "Firebase signInWithCredential failure", task.exception)
+                    Log.w(tag, "Firebase signInWithCredential failure", task.exception)
                     Toast.makeText(
                         this,
                         "Firebase Authentication Failed: ${task.exception?.message}",
@@ -1037,9 +1077,7 @@ class LoginActivity : AppCompatActivity() {
 
 
     private fun isNetworkAvailable(): Boolean {
-        // (Same isNetworkAvailable function as in RegisterActivity)
-        val connectivityManager =
-            getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return false
             val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
@@ -1067,41 +1105,37 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // --- Input Validations ---
         if (email.isEmpty()) {
             binding.editTextEmailLogin.error = getString(R.string.email_required)
             binding.editTextEmailLogin.requestFocus()
             return
         }
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             binding.editTextEmailLogin.error = getString(R.string.invalid_email_address)
             binding.editTextEmailLogin.requestFocus()
             return
         }
-
         if (password.isEmpty()) {
             binding.editTextPasswordLogin.error = getString(R.string.password_required)
             binding.editTextPasswordLogin.requestFocus()
             return
         }
 
-        // --- Show Progress Bar & Disable UI ---
         binding.progressBarLogin.visibility = View.VISIBLE
         enableLoginUI(false)
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
+                // handleSuccessfulLoginWithRoleCheck or the failure path will manage UI
                 if (task.isSuccessful) {
-                    binding.progressBarLogin.visibility = View.GONE
                     val user = auth.currentUser
                     if (user != null) {
                         if (user.isEmailVerified) {
-                            Log.d(TAG, "signInWithEmail:success - Email Verified")
+                            Log.d(tag, "signInWithEmail:success - Email Verified")
                             loginAttempts = 0
-                            handleSuccessfulLoginWithRoleCheck(user)
+                            handleSuccessfulLoginWithRoleCheck(user) // This will hide progress, enable UI
                         } else {
-                            Log.w(TAG, "signInWithEmail:success - BUT Email NOT Verified")
+                            Log.w(tag, "signInWithEmail:success - BUT Email NOT Verified")
                             binding.progressBarLogin.visibility = View.GONE
                             enableLoginUI(true)
                             loginAttempts = 0
@@ -1111,43 +1145,41 @@ class LoginActivity : AppCompatActivity() {
                     } else {
                         binding.progressBarLogin.visibility = View.GONE
                         enableLoginUI(true)
-                        Log.e(TAG, "signInWithEmail:success - BUT user is null!")
+                        Log.e(tag, "signInWithEmail:success - BUT user is null!")
                         Toast.makeText(
                             baseContext,
-                            "Authentication failed: User data not found.",
+                            "Autentificarea a eșuat: datele utilizatorului nu au fost găsite.",
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 } else {
-                    // Login failed
-                    binding.progressBarLogin.visibility = View.GONE
+                    binding.progressBarLogin.visibility =
+                        View.GONE // Ensure hidden on failure before other UI actions
                     enableLoginUI(true)
                     loginAttempts++
-                    Log.w(TAG, "signInWithEmail:failure", task.exception)
+                    Log.w(tag, "signInWithEmail:failure", task.exception)
                     val exception = task.exception
 
                     if (exception is FirebaseAuthMultiFactorException) {
                         Log.d(
-                            TAG,
-                            "MFA is required for this user. Handling with FirebaseAuthMultiFactorException."
+                            tag,
+                            "MFA is required. Handling with FirebaseAuthMultiFactorException."
                         )
                         mfaSignInResolver = exception.resolver
-                        promptForMfaSignIn(mfaSignInResolver!!)
+                        promptForMfaSignIn(mfaSignInResolver!!) // This will manage its own UI
                     } else {
-                        binding.progressBarLogin.visibility = View.GONE
-                        enableLoginUI(true)
-
-                        var errorMessage = "Authentication failed."
+                        var errorMessage = getString(R.string.auth_failed_default)
                         if (exception is FirebaseAuthInvalidUserException) {
-                            errorMessage = "No account found with this email."
+                            errorMessage = getString(R.string.auth_failed_no_user)
                         } else if (exception is FirebaseAuthInvalidCredentialsException) {
-                            errorMessage = "Incorrect password."
+                            errorMessage = getString(R.string.auth_failed_incorrect_password)
                         } else if (exception != null) {
-                            errorMessage = "Authentication failed: ${exception.message}"
+                            errorMessage =
+                                getString(R.string.auth_failed_exception, exception.message)
                         }
 
                         if (loginAttempts >= MAX_LOGIN_ATTEMPTS_BEFORE_SUGGESTION) {
-                            errorMessage += "\nHaving trouble? Try using the 'Forgot Password' option."
+                            errorMessage += "\n" + getString(R.string.auth_failed_suggestion)
                         }
                         Toast.makeText(baseContext, errorMessage, Toast.LENGTH_LONG).show()
                     }
@@ -1156,88 +1188,77 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun promptForMfaSignIn(resolver: MultiFactorResolver) {
-        Log.d(TAG, "promptForMfaSignIn called.")
+        Log.d(tag, "promptForMfaSignIn called.")
+        // UI should be mostly disabled by loginUser, just ensure progress bar is hidden
         binding.progressBarLogin.visibility = View.GONE
+        // Keep main login buttons disabled, MFA dialog will handle its own interaction
         binding.buttonLogin.isEnabled = false
         binding.googleSignInButton.isEnabled = false
-        binding.textViewGoToRegister.isEnabled = true
-        binding.textViewForgotPassword.isEnabled = true
 
         val phoneHint = resolver.hints.find { it is PhoneMultiFactorInfo } as? PhoneMultiFactorInfo
         if (phoneHint == null) {
-            Toast.makeText(
-                this,
-                "MFA is required, but no phone factor found. Please contact support or try re-enrolling MFA.",
-                Toast.LENGTH_LONG
-            ).show()
-            Log.e(
-                TAG,
-                "MFA required, but no PhoneMultiFactorInfo hint found for resolver: ${resolver.hints}"
-            )
-            binding.buttonLogin.isEnabled = true
-            binding.googleSignInButton.isEnabled = true
+            Toast.makeText(this, "MFA este necesar, dar nu a fost găsit niciun factor de telefon.", Toast.LENGTH_LONG)
+                .show()
+            Log.e(tag, "MFA required, but no PhoneMultiFactorInfo hint found.")
+            enableLoginUI(true) // Re-enable main login UI
+            mfaSignInResolver = null
             return
         }
 
         val dialogBinding = DialogMfaLoginCodeBinding.inflate(layoutInflater)
         val mfaDialog = AlertDialog.Builder(this)
-            .setTitle("Enter MFA Code")
+            .setTitle(getString(R.string.mfa_dialog_title))
             .setView(dialogBinding.root)
             .setCancelable(false)
             .create()
 
-        mfaDialog.setOnCancelListener {
-            Log.d(TAG, "MFA Dialog cancelled by user.")
-            binding.buttonLogin.isEnabled = true
-            binding.googleSignInButton.isEnabled = true
-            mfaSignInResolver = null // Clear resolver
+        mfaDialog.setOnDismissListener { // Changed from setOnCancelListener to handle all dismiss types
+            Log.d(tag, "MFA Dialog dismissed/cancelled.")
+            if (mfaSignInResolver != null) { // Only re-enable if resolver wasn't cleared by success/failure
+                enableLoginUI(true)
+            }
+            mfaSignInResolver = null
         }
+
 
         val mfaSignInCallbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                Log.d(TAG, "MFA Sign-in: onVerificationCompleted (auto-retrieval).")
+                Log.d(tag, "MFA Sign-in: onVerificationCompleted (auto-retrieval).")
                 dialogBinding.etLoginMfaCode.setText(credential.smsCode)
                 val assertion = PhoneMultiFactorGenerator.getAssertion(credential)
-                resolveMfaSignIn(resolver, assertion) // Use the original resolver
-                if (mfaDialog.isShowing) mfaDialog.dismiss()
+                if (mfaDialog.isShowing) mfaDialog.dismiss() // Dismiss before resolving
+                binding.progressBarLogin.visibility = View.VISIBLE // Show progress for resolution
+                // Main UI (login buttons) should still be disabled here
+                resolveMfaSignIn(resolver, assertion)
             }
 
             override fun onVerificationFailed(e: FirebaseException) {
-                Log.e(TAG, "MFA Sign-in: onVerificationFailed: ${e.message}", e)
+                Log.e(tag, "MFA Sign-in: onVerificationFailed: ${e.message}", e)
                 Toast.makeText(
                     this@LoginActivity,
-                    "MFA verification failed: ${e.message}",
+                    "Verificarea MFA a eșuat: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
                 if (mfaDialog.isShowing) mfaDialog.dismiss()
-                // Re-enable primary login buttons on failure
-                binding.buttonLogin.isEnabled = true
-                binding.googleSignInButton.isEnabled = true
-                mfaSignInResolver = null // Clear resolver
+                // enableLoginUI(true) // Now handled by onDismissListener
+                // mfaSignInResolver = null // Now handled by onDismissListener
             }
 
             override fun onCodeSent(
                 verificationId: String,
                 token: PhoneAuthProvider.ForceResendingToken
             ) {
-                Log.d(TAG, "MFA Sign-in: onCodeSent. Verification ID: $verificationId")
+                Log.d(tag, "MFA Sign-in: onCodeSent. Verification ID: $verificationId")
                 this@LoginActivity.mfaSignInVerificationId = verificationId
                 this@LoginActivity.mfaSignInResendingToken = token
-                Toast.makeText(
-                    this@LoginActivity,
-                    "MFA code sent to your phone.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this@LoginActivity, "Codul MFA trimis.", Toast.LENGTH_SHORT).show()
                 dialogBinding.buttonVerifyMfaCode.isEnabled = true
                 dialogBinding.tvResendMfaCode.isEnabled = true
             }
         }
 
-        Log.d(
-            TAG,
-            "Requesting MFA code for hint: ${phoneHint.displayName}, UID in hint: ${phoneHint.uid}"
-        )
-        val options = PhoneAuthOptions.newBuilder(auth) // Use your auth instance
+        Log.d(tag, "Requesting MFA code for hint: ${phoneHint.displayName}")
+        val options = PhoneAuthOptions.newBuilder(auth)
             .setTimeout(60L, TimeUnit.SECONDS)
             .setActivity(this)
             .setCallbacks(mfaSignInCallbacks)
@@ -1249,18 +1270,20 @@ class LoginActivity : AppCompatActivity() {
         dialogBinding.buttonVerifyMfaCode.setOnClickListener {
             val smsCode = dialogBinding.etLoginMfaCode.text.toString().trim()
             if (mfaSignInVerificationId != null && smsCode.isNotEmpty()) {
-                dialogBinding.buttonVerifyMfaCode.isEnabled = false // Disable while verifying
+                dialogBinding.buttonVerifyMfaCode.isEnabled = false
                 val credential = PhoneAuthProvider.getCredential(mfaSignInVerificationId!!, smsCode)
                 val assertion = PhoneMultiFactorGenerator.getAssertion(credential)
+                if (mfaDialog.isShowing) mfaDialog.dismiss()
+                binding.progressBarLogin.visibility = View.VISIBLE
                 resolveMfaSignIn(resolver, assertion)
             } else {
-                Toast.makeText(this, "Please enter the SMS code.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Vă rugăm să introduceți codul SMS.", Toast.LENGTH_SHORT).show()
             }
         }
 
         dialogBinding.tvResendMfaCode.setOnClickListener {
             if (mfaSignInResendingToken != null) {
-                Toast.makeText(this@LoginActivity, "Resending MFA code...", Toast.LENGTH_SHORT)
+                Toast.makeText(this@LoginActivity, "Revending codul MFA ...", Toast.LENGTH_SHORT)
                     .show()
                 dialogBinding.tvResendMfaCode.isEnabled = false
                 val resendOptions = PhoneAuthOptions.newBuilder(auth)
@@ -1273,11 +1296,8 @@ class LoginActivity : AppCompatActivity() {
                     .build()
                 PhoneAuthProvider.verifyPhoneNumber(resendOptions)
             } else {
-                Toast.makeText(
-                    this@LoginActivity,
-                    "Cannot resend code at this moment.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this@LoginActivity, "Nu se poate retrimite codul acum.", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
 
@@ -1290,48 +1310,44 @@ class LoginActivity : AppCompatActivity() {
         resolver: MultiFactorResolver,
         assertion: MultiFactorAssertion
     ) {
-        Log.d(TAG, "resolveMfaSignIn called.")
-        // Keep progressBarLogin visible, handleSuccessfulLoginWithRoleCheck will hide it
-        // binding.progressBarLogin.visibility = View.VISIBLE
+        Log.d(tag, "resolveMfaSignIn called.")
+        // Progress bar should be visible from caller
+        // UI (login buttons) should be disabled from caller
 
         resolver.resolveSignIn(assertion)
             .addOnSuccessListener { authResult ->
-                // binding.progressBarLogin.visibility = View.GONE // Moved
                 Log.d(
-                    TAG,
+                    tag,
                     "MFA Sign-in fully resolved! User: ${authResult.user?.uid}. Checking role..."
                 )
+                this.mfaSignInResolver = null // Clear resolver on success
                 authResult.user?.let {
-                    handleSuccessfulLoginWithRoleCheck(it)
+                    handleSuccessfulLoginWithRoleCheck(it) // This will manage UI (progress, buttons)
                 } ?: run {
-                    binding.progressBarLogin.visibility = View.GONE // Hide if user is null
+                    binding.progressBarLogin.visibility = View.GONE
                     enableLoginUI(true)
-                    Log.e(TAG, "MFA resolved but user is null.")
-                    Toast.makeText(this, "MFA sign-in error.", Toast.LENGTH_LONG).show()
-                    mfaSignInResolver = null
+                    Log.e(tag, "MFA resolved but user is null.")
+                    Toast.makeText(this, "Eroare de conectare MFA.", Toast.LENGTH_LONG).show()
                 }
             }
             .addOnFailureListener { e ->
-                binding.progressBarLogin.visibility = View.GONE // Hide on failure
+                binding.progressBarLogin.visibility = View.GONE
                 enableLoginUI(true)
-                Log.e(TAG, "Error resolving MFA sign-in: ${e.message}", e)
-                Toast.makeText(this, "MFA verification failed: ${e.message}", Toast.LENGTH_LONG)
+                Log.e(tag, "Error resolving MFA sign-in: ${e.message}", e)
+                Toast.makeText(this, "Verificarea MFA a eșuat: ${e.message}", Toast.LENGTH_LONG)
                     .show()
-                mfaSignInResolver = null
+                this.mfaSignInResolver = null // Clear resolver on failure
             }
     }
 
     private fun showEmailNotVerifiedDialog(user: FirebaseUser, fromOnStart: Boolean = false) {
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle(getString(R.string.email_verification_required_title)) // "Email Verification Required"
+        dialogBuilder.setTitle(getString(R.string.email_verification_required_title))
         dialogBuilder.setMessage(
-            getString(
-                R.string.email_verification_message_part1,
-                user.email ?: "your email"
-            ) + "\n\n" + // "Your email address (...) is not yet verified."
-                    getString(R.string.email_verification_message_part2)  // "Please check your inbox..."
+            getString(R.string.email_verification_message_part1, user.email ?: "your email") +
+                    "\n\n" + getString(R.string.email_verification_message_part2)
         )
-        dialogBuilder.setPositiveButton(getString(R.string.resend_email_button)) { dialog, _ -> // "Resend Email"
+        dialogBuilder.setPositiveButton(getString(R.string.resend_email_button)) { dialog, _ ->
             user.sendEmailVerification()
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
@@ -1341,7 +1357,7 @@ class LoginActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
-                        Log.e(TAG, "sendEmailVerification failed", task.exception)
+                        Log.e(tag, "sendEmailVerification failed", task.exception)
                         Toast.makeText(
                             this,
                             getString(R.string.failed_to_send_verification_email_toast),
@@ -1351,32 +1367,23 @@ class LoginActivity : AppCompatActivity() {
                 }
             dialog.dismiss()
             if (fromOnStart) {
-                // If called from onStart, they are still on LoginActivity.
-                // Re-enable UI so they can choose to manually login if verification is slow or they close the app.
                 enableLoginUI(true)
             }
-            // If not fromOnStart (i.e., from manual login attempt), auth.signOut() is usually called by the loginUser flow.
         }
-        dialogBuilder.setNegativeButton(getString(R.string.later_button)) { dialog, _ -> // "Later" or "OK"
+        dialogBuilder.setNegativeButton(getString(R.string.ok_button)) { dialog, _ -> // Changed from "Later" to "OK" for clarity
             dialog.dismiss()
             if (fromOnStart) {
-                // If they choose "Later" from an onStart prompt, it means they can't proceed.
-                // Sign them out to make it clear they need to verify before using the app.
                 auth.signOut()
-                Log.d(
-                    TAG,
-                    "User chose 'Later' for email verification from onStart prompt. Signed out."
-                )
+                Log.d(tag, "User chose 'OK' for email verification from onStart. Signed out.")
                 Toast.makeText(
                     this,
                     getString(R.string.please_verify_to_continue_toast),
                     Toast.LENGTH_LONG
                 ).show()
-                enableLoginUI(true) // Re-enable UI for a fresh login attempt later.
+                enableLoginUI(true)
             }
-            // If not fromOnStart, auth.signOut() is typically already handled.
         }
-        dialogBuilder.setCancelable(false) // Make it intentional to dismiss
+        dialogBuilder.setCancelable(false)
         val alert = dialogBuilder.create()
         alert.show()
     }
@@ -1387,48 +1394,34 @@ class LoginActivity : AppCompatActivity() {
         binding.buttonLogin.isEnabled = enable
         binding.googleSignInButton.isEnabled = enable
 
-        // For the biometric button, its enabled state might also depend on biometric availability.
-        // So, it's often better to manage its visibility/enabled state separately or as part of
-        // a dedicated function like checkAndSetupBiometricLoginButtonVisibility().
         if (enable) {
-            checkBiometricAvailabilityAndSetupLoginPrompt() // This will set visibility and potentially enable if conditions met
+            // Re-check biometric status only when enabling UI fully
+            checkBiometricAvailabilityAndSetupLoginPrompt() // This will manage biometric button visibility and enabled state
         } else {
-            binding.buttonBiometricLogin.isEnabled = false // Directly disable if 'enable' is false
+            binding.buttonBiometricLogin.isEnabled =
+                false // Directly disable if overall UI is being disabled
         }
 
         binding.textViewGoToRegister.isClickable = enable
-        binding.textViewGoToRegister.isEnabled = enable // For visual feedback
+        binding.textViewGoToRegister.isEnabled = enable
         binding.textViewForgotPassword.isClickable = enable
-        binding.textViewForgotPassword.isEnabled = enable // For visual feedback
+        binding.textViewForgotPassword.isEnabled = enable
     }
 
     private fun disableLoginUIWhileChecking() {
+        // This is called when an async operation starts (like role check)
         binding.editTextEmailLogin.isEnabled = false
         binding.editTextPasswordLogin.isEnabled = false
         binding.buttonLogin.isEnabled = false
         binding.googleSignInButton.isEnabled = false
-        binding.buttonBiometricLogin.isEnabled = false // Assuming you have one
+        binding.buttonBiometricLogin.isEnabled = false
         binding.textViewGoToRegister.isClickable = false
-        binding.textViewGoToRegister.isEnabled = false // For visual cue
+        binding.textViewGoToRegister.isEnabled = false
         binding.textViewForgotPassword.isClickable = false
-        binding.textViewForgotPassword.isEnabled = false // For visual cue
+        binding.textViewForgotPassword.isEnabled = false
     }
 
-    private fun navigateToMainApp() {
-        // TODO: Replace MainActivity::class.java with your actual main activity after login
-        val intent = Intent(this, MainUserActivity::class.java)
-        intent.flags =
-            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        finish() // Finish LoginActivity so user can't go back to it with back button
-    }
+    // navigateToMainApp is not directly called anymore, navigation happens in handleSuccessfulLoginWithRoleCheck
+    // private fun navigateToMainApp() { ... }
 
-    // Optional: If you want to handle the case where user presses back
-    // and they were redirected here because auth.currentUser != null in onCreate
-    // override fun onResume() {
-    //     super.onResume()
-    //     if (auth.currentUser != null) {
-    //         navigateToMainApp()
-    //     }
-    // }
 }

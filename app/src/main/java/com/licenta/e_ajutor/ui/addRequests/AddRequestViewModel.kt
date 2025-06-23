@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-typealias CountResult = Pair<String, Int> // Keep this if used by findLeastLoadedOperatorByCounty
+typealias CountResult = Pair<String, Int>
 
 class AddRequestViewModel : ViewModel() {
 
@@ -57,9 +57,8 @@ class AddRequestViewModel : ViewModel() {
         loadBenefitTypes()
     }
 
+    //TODO: Remove this and use real data
     fun loadBenefitTypes() {
-        // In a real app, fetch from Firestore or remote config
-        // Using your dummy data for now
         _benefitTypes.value = listOf(
             BenefitType(
                 "unemployment", "Unemployment Benefit", listOf(

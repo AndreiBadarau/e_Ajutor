@@ -12,61 +12,67 @@
         android:id="@+id/textViewFirstNameLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Nume:"
+        android:text="@string/nume_"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textViewFirstName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="260dp"
+        android:layout_height="27dp"
         android:layout_marginStart="8dp"
         android:textSize="18sp"
+        android:textStyle="bold"
         app:layout_constraintBaseline_toBaselineOf="@id/textViewFirstNameLabel"
-        app:layout_constraintEnd_toStartOf="@id/buttonEditName"
+        app:layout_constraintEnd_toStartOf="@+id/buttonEditName"
         app:layout_constraintStart_toEndOf="@id/textViewFirstNameLabel"
         tools:text="John" />
 
+
+    <!-- Last Name -->
+
     <ImageButton
         android:id="@+id/buttonEditName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="Edit Name"
-        android:src="@android:drawable/ic_menu_edit"
-        app:layout_constraintBottom_toBottomOf="@id/textViewFirstName"
+        android:layout_width="67dp"
+        android:layout_height="56dp"
+        android:contentDescription="@string/edit_name"
+        android:src="@drawable/ic_menu_edit"
+        app:layout_constraintBottom_toBottomOf="@+id/textViewLastName"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/textViewFirstName" />
 
-
-    <!-- Last Name -->
     <TextView
         android:id="@+id/textViewLastNameLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Prenume:"
+        android:text="@string/prenume"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewFirstNameLabel" />
 
+
+    <!-- Email -->
     <TextView
         android:id="@+id/textViewLastName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="233dp"
+        android:layout_height="23dp"
         android:layout_marginStart="8dp"
         android:textSize="18sp"
+        android:textStyle="bold"
         app:layout_constraintBaseline_toBaselineOf="@id/textViewLastNameLabel"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/buttonEditName"
         app:layout_constraintStart_toEndOf="@id/textViewLastNameLabel"
         tools:text="Doe" />
 
-
-    <!-- Email -->
     <TextView
         android:id="@+id/textViewEmailLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Email:"
+        android:text="@string/adresa_de_e_mail_"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewLastNameLabel" />
 
@@ -79,6 +85,7 @@
         app:layout_constraintBaseline_toBaselineOf="@id/textViewEmailLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/textViewEmailLabel"
+        android:textStyle="bold"
         tools:text="john.doe@example.com" />
 
     <!-- Phone -->
@@ -87,7 +94,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Numar de telefon:"
+        android:text="@string/num_r_de_telefon"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewEmailLabel" />
 
@@ -100,6 +108,7 @@
         app:layout_constraintBaseline_toBaselineOf="@id/textViewPhoneLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/textViewPhoneLabel"
+        android:textStyle="bold"
         tools:text="0123456789" />
 
     <!-- Placeholder for "2FA" (we'll implement later) -->
@@ -108,17 +117,19 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Setup 2-Factor Authentication"
+        android:text="@string/setup_2_factor_authentication"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewPhone" />
 
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/switchBiometricLogin"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="378dp"
+        android:layout_height="48dp"
         android:layout_marginTop="16dp"
-        android:text="Enable Biometric Login"
+        android:textStyle="bold"
+        android:text="@string/activa_i_autentificare_biometric"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/buttonSetup2FA" />
 
@@ -128,8 +139,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="68dp"
-        android:backgroundTint="@color/design_default_color_error"
-        android:text="Sign Out"
+        android:backgroundTint="@color/colorError"
+        android:text="@string/sign_out"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -150,7 +161,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Set Your Service Area"
+            android:text="@string/set_your_service_area"
             android:textAppearance="?attr/textAppearanceHeadline6" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -159,14 +170,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Enter Service Address or City">
+            android:hint="@string/enter_service_address">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/editTextOperatorAddress"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:completionThreshold="1"
-                android:hint="Enter Service Address"
+                android:hint="@string/enter_service_address"
                 android:inputType="textPostalAddress" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -175,23 +186,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Save Service Location" />
+            android:text="@string/save_service_location" />
 
         <TextView
             android:id="@+id/textViewCurrentOperatorLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Current Service Location: Not Set"
+            android:text="@string/current_service_location_not_set"
             android:textAppearance="?attr/textAppearanceBody2" />
-
-        <Button
-            android:id="@+id/buttonUseCurrentGpsForOperator"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Use My Current GPS Location" />
 
     </LinearLayout>
 
@@ -204,13 +207,14 @@
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/buttonSignOut"
         app:layout_constraintTop_toBottomOf="@+id/switchBiometricLogin"
-        tools:layout_editor_absoluteX="16dp"
-        tools:visibility="gone">
+        app:layout_constraintVertical_bias="0.555"
+        tools:layout_editor_absoluteX="17dp"
+        tools:visibility="visible">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Your Residential Address"
+            android:text="@string/adresa_dvs_reziden_ial"
             android:textAppearance="?attr/textAppearanceHeadline6" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -219,15 +223,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Enter Home Address">
+            android:hint="@string/enter_home_address">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/editTextUserAddress"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Enter Home Address"
-                android:inputType="textPostalAddress"
-                android:completionThreshold="1" />
+                android:layout_height="48dp"
+                android:completionThreshold="1"
+                android:hint="@string/enter_home_address"
+                android:inputType="textPostalAddress" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -235,14 +239,15 @@
             android:id="@+id/buttonSaveUserAddress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Save My Address" />
+            android:layout_marginTop="8dp"
+            android:text="@string/save_my_address" />
 
         <TextView
             android:id="@+id/textViewCurrentUserLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Current Home Location: Not Set"
+            android:text="@string/current_home_residential_address_not_set"
             android:textAppearance="?attr/textAppearanceBody2" />
 
         <Button
@@ -251,7 +256,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Use My Current GPS Location" />
+            android:text="@string/use_my_current_gps_location" />
     </LinearLayout>
 
 

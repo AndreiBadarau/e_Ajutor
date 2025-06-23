@@ -37,6 +37,8 @@ import com.licenta.e_ajutor.model.UserRequest
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+// TODO: nu se da refresh la cereri cand schimbi tabul
+
 class ViewRequestsFragment : Fragment() {
 
     private var _binding: FragmentViewRequestsBinding? = null
@@ -401,7 +403,8 @@ class ViewRequestsFragment : Fragment() {
 
         if (request == null) {
             detailBinding.toolbarDetail.title = "Request Not Found"
-            detailBinding.textViewDetailBenefitType.text = "Error: Request data is unavailable."
+            detailBinding.textViewDetailBenefitType.text =
+                getString(R.string.error_request_data_is_unavailable)
             detailBinding.textViewDetailStatus.text = "N/A"
             // ... (hide/clear other fields as in your previous version) ...
             detailBinding.linearLayoutOperatorActions.isVisible = false
@@ -413,7 +416,9 @@ class ViewRequestsFragment : Fragment() {
         detailBinding.toolbarDetail.title = "Request #${request.id.takeLast(6).uppercase(Locale.ROOT)}"
         detailBinding.textViewDetailBenefitType.text = request.benefitTypeName.ifEmpty { request.benefitTypeId }
         detailBinding.textViewDetailStatus.text = request.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
-        detailBinding.textViewDetailSubmissionDate.text = "Submitted: ${request.timestamp?.toDate()?.let { detailViewDateFormat.format(it) } ?: "N/A"}"
+        detailBinding.textViewDetailSubmissionDate.text = getString(
+            R.string.submitted,
+            request.timestamp?.toDate()?.let { detailViewDateFormat.format(it) } ?: "N/A")
 
         val statusColor = when (request.status.lowercase(Locale.ROOT)) {
             "approved" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_green)
@@ -431,7 +436,8 @@ class ViewRequestsFragment : Fragment() {
         }
 
         if (viewModel.userRole.value == UserRole.OPERATOR) {
-            detailBinding.textViewDetailUserInfo.text = "User: ${request.userName.ifEmpty { request.userId }}"
+            detailBinding.textViewDetailUserInfo.text =
+                getString(R.string.utilizator, request.userName.ifEmpty { request.userId })
             detailBinding.textViewDetailUserInfo.isVisible = true
             detailBinding.linearLayoutOperatorActions.isVisible = request.status.equals("pending", ignoreCase = true)
             if (!detailBinding.buttonSubmitRejection.isVisible) {
@@ -444,7 +450,8 @@ class ViewRequestsFragment : Fragment() {
             detailBinding.buttonSubmitRejection.isVisible = false
         }
 
-        detailBinding.textViewDetailIban.text = "IBAN: ${request.iban.ifEmpty { "Not Provided" }}"
+        detailBinding.textViewDetailIban.text =
+            getString(R.string.iban, request.iban.ifEmpty { "Not Provided" })
         detailBinding.textViewDetailExtraInfo.text = request.extraInfo.ifEmpty { "No additional information." }
 
         populateDocumentsListInDetailView(request.documentLinks)
@@ -456,7 +463,7 @@ class ViewRequestsFragment : Fragment() {
 
         if (documents.isEmpty()) {
             val noDocsTextView = TextView(requireContext()).apply {
-                text = "No documents available for this request."
+                text = context.getString(R.string.no_documents_available_for_this_request)
                 // ... (styling as before)
             }
             documentsContainer.addView(noDocsTextView)

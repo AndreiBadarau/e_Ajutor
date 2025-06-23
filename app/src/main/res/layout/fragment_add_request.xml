@@ -26,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="24dp"
-            android:text="Submit a New Request"
+            android:text="@string/submit_a_new_request"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -34,7 +34,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select benefit type:" />
+            android:text="@string/select_benefit_type" />
 
         <Spinner
             android:id="@+id/benefitTypeSpinner"
@@ -48,7 +48,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="Benefit description will appear here."
+            android:text="@string/benefit_description_will_appear_here"
             android:textColor="#555555"
             android:textSize="14sp" />
 
@@ -57,7 +57,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
-            android:text="Required Documents:"
+            android:text="@string/required_documents"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -74,7 +74,7 @@
             android:id="@+id/uploadDocumentButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Upload Document" />
+            android:text="@string/upload_document" />
 
         <TextView
             android:id="@+id/uploadStatusText"
@@ -82,7 +82,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="16dp"
-            android:text="No file uploaded."
+            android:text="@string/no_file_uploaded"
             android:textColor="#777777"
             android:textSize="12sp" />
 
@@ -90,20 +90,20 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="IBAN:" />
+            android:text="@string/iban_lay" />
 
         <EditText
             android:id="@+id/ibanEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:hint="Enter your IBAN"
+            android:hint="@string/enter_your_iban"
             android:inputType="text" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Additional Information:" />
+            android:text="@string/additional_information" />
 
         <EditText
             android:id="@+id/extraInfoEditText"
@@ -111,7 +111,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:gravity="top"
-            android:hint="Optional notes..."
+            android:hint="@string/optional_notes"
             android:inputType="textMultiLine"
             android:minLines="3" />
 
@@ -121,7 +121,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:text="I agree to the processing of my personal data (GDPR)" />
+            android:text="@string/GDPR" />
 
         <!-- Submit Button -->
         <Button
@@ -129,7 +129,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="?android:attr/colorAccent"
-            android:text="Submit Request"
+            android:text="@string/submit_request"
             android:textAllCaps="false" />
 
     </LinearLayout>

@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/operator_profile_dashboard"
-        android:name="com.licenta.e_ajutor.ProfileFragment"
+        android:name="com.licenta.e_ajutor.ui.profile.ProfileFragment"
         android:label="fragment_operator_dashboard"
         tools:layout="@layout/fragment_profile" />
 

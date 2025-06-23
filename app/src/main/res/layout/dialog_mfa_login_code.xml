@@ -9,14 +9,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Enter the code sent to your phone"
+        android:text="@string/enter_the_code_sent_to_your_phone"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <EditText
         android:id="@+id/etLoginMfaCode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="SMS Code"
+        android:hint="@string/sms_code"
         android:inputType="number" />
 
     <Button
@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Verify and Sign In" />
+        android:text="@string/verify_and_sign_in" />
 
     <TextView
         android:id="@+id/tvResendMfaCode"
@@ -35,7 +35,7 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="8dp"
-        android:text="Resend Code"
+        android:text="@string/resend_code"
         android:textColor="?attr/colorPrimary" />
 
 </LinearLayout>
