@@ -119,7 +119,7 @@ sa va inregistrati din nou.</string>
     <string name="verify_and_sign_in">Verificați și Conectați-vă</string>
     <string name="resend_code">Retrimitere Cod</string>
     <string name="view">Vizualizează</string>
-    <string name="select_benefit_type">Selectați tipul de beneficiu:</string>
+    <string name="select_benefit_type">Selectați tipul de indemnizatie:</string>
     <string name="benefit_description_will_appear_here">Descrierea beneficiului va apărea aici.</string>
     <string name="required_documents">Documente necesare:</string>
     <string name="introduceti_adresa_de_email_asociata">Introduceti adresa de email asociata cu contul tau pentru a primi instructiuni pentru a va putea reseta parola.</string>

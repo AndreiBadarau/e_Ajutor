@@ -54,28 +54,44 @@ class AddRequestViewModel : ViewModel() {
     val navigateToSeeRequestsEvent: LiveData<Event<Unit>> = _navigateToSeeRequestsEvent
 
     init {
-        loadBenefitTypes()
+        loadBenefitTypesFromFirestore()
     }
 
-    //TODO: Remove this and use real data
-    fun loadBenefitTypes() {
-        _benefitTypes.value = listOf(
-            BenefitType(
-                "unemployment", "Unemployment Benefit", listOf(
-                    DocumentRequirement("id_card", "ID Card"),
-                    DocumentRequirement("proof_of_employment", "Proof of Employment")
-                )
-            ),
-            BenefitType(
-                "child_support", "Child Support", listOf(
-                    DocumentRequirement("birth_certificate", "Birth Certificate"),
-                    DocumentRequirement("parent_id", "Parent ID")
-                )
-            )
-        )
-        // Auto-select first if available
-        if (_benefitTypes.value?.isNotEmpty() == true) {
-            // selectBenefitType(_benefitTypes.value!!.first()) // Fragment will handle initial UI update based on observer
+    fun loadBenefitTypesFromFirestore() {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val snapshot = db.collection("benefit_types").get().await()
+                val types = snapshot.documents.mapNotNull { document ->
+                    val requiredDocsList =
+                        document.get("requiredDocuments") as? List<HashMap<String, String>>
+                    val mappedDocs = requiredDocsList?.mapNotNull { docMap ->
+                        val docId = docMap["id"]
+                        val docName = docMap["displayName"]
+                        if (docId != null && docName != null) {
+                            DocumentRequirement(docId, docName)
+                        } else {
+                            null // Or log an error if a doc is malformed
+                        }
+                    } ?: emptyList()
+                    BenefitType(
+                        id = document.id, // Use Firestore document ID as the BenefitType ID
+                        name = document.getString("name")
+                            ?: "Unnamed Benefit", // Provide default if name is null
+                        requiredDocuments = mappedDocs
+                    )
+                }
+                _benefitTypes.value = types
+                // If you want to auto-select the first item after loading:
+                 if (types.isNotEmpty()) {
+                    onBenefitTypeSelected(types.first()) // Ensure this doesn't cause issues if fragment also tries to set initial
+                 }
+            } catch (e: Exception) {
+                _uiToastEvent.postValue(Event("Failed to load benefit types: ${e.message}"))
+                _benefitTypes.value = emptyList() // Set to empty list on error
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -153,6 +169,7 @@ class AddRequestViewModel : ViewModel() {
                     .await()
 
                 if (opSnap.isEmpty) {
+                    _uiToastEvent.postValue(Event("No operators found for county: $countyParam"))
                     return@withContext null
                 }
 
@@ -221,6 +238,7 @@ class AddRequestViewModel : ViewModel() {
             try {
                 val userDoc = db.collection("users").document(userId).get().await()
                 val userCounty = userDoc.getString("county")
+                val userName = (userDoc.getString("firstName") ?: "") + " " + (userDoc.getString("lastName") ?: "")
 
                 if (userCounty.isNullOrBlank()) {
                     _uiToastEvent.value =
@@ -240,7 +258,7 @@ class AddRequestViewModel : ViewModel() {
                 val request = UserRequest(
                     id = requestId, // Use ViewModel's requestId
                     userId = userId,
-                    userName = userDoc.getString("firstName") + " " + userDoc.getString("lastName") ?: "",
+                    userName = userName.trim(),
                     operatorId = operatorId,
                     benefitTypeId = currentSelectedBenefit.id,
                     benefitTypeName = currentSelectedBenefit.name,

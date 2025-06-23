@@ -1,4 +1,4 @@
-package com.licenta.e_ajutor.model // Your package name
+package com.licenta.e_ajutor.model
 
 // Represents a specific document that might be required
 data class DocumentRequirement(
