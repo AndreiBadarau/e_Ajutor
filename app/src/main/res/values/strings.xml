@@ -78,7 +78,7 @@ sa va inregistrati din nou.</string>
     <string name="auth_failed_exception">Autentificarea a eșuat: %1$s</string>
     <string name="auth_failed_suggestion">Aveți probleme? Încercați să utilizați opțiunea "Ai uitat parola?".</string>
     <string name="mfa_dialog_title">Introduceți codul MFA.</string>
-    <string name="ok_button">Ok</string>
+    <string name="ok_button">OK</string>
     <string name="session_requires_recent_login">Sesiunea necesită o autentificare recentă. Vă rugăm să vă re-autentificați.</string>
     <string name="error_preparing_for_mfa_setup">Eroare la pregătirea pentru configurarea MFA: %1$s</string>
     <string name="verification_failed">Verificarea a eșuat: %1$s</string>
@@ -106,7 +106,7 @@ sa va inregistrati din nou.</string>
     <string name="current_service_location_lat_lng_address_not_found">Locația curentă a serviciului: Lat %1$s, Lng %2$s (Address not found)</string>
     <string name="current_service_location_lat_lng_error_finding_address">Locația curentă a serviciului: Lat %1$s, Lng %2$s (Error finding address)</string>
     <string name="error_request_data_is_unavailable">Eroare: Datele de solicitare nu sunt disponibile.</string>
-    <string name="submitted">Submitted: %1$s</string>
+    <string name="submitted">Solicitarea a fost trimisă: %1$s</string>
     <string name="utilizator">Utilizator: %1$s</string>
     <string name="iban">IBAN: %1$s</string>
     <string name="no_documents_available_for_this_request">Nu există documente disponibile pentru această solicitare.</string>
@@ -131,7 +131,7 @@ sa va inregistrati din nou.</string>
     <string name="iban_lay">IBAN:</string>
     <string name="enter_your_iban">Introduceți IBAN-ul dvs.</string>
     <string name="additional_information">Informații suplimentare:</string>
-    <string name="optional_notes">Note opționale ...</string>
+    <string name="optional_notes">Note opționale …</string>
     <string name="GDPR">Sunt de acord cu procesarea datelor mele personale (GDPR).</string>
     <string name="submit_request">Trimiteți cererea</string>
     <string name="gdpr_checkbox_text">Sunt de acord cu procesarea datelor mele personale (GDPR).</string>
@@ -146,20 +146,20 @@ sa va inregistrati din nou.</string>
     <string name="reject">Respinge</string>
     <string name="submit_rejection">Trimiteți respingerea</string>
     <string name="chat">Conversație</string>
-    <string name="type_a_message">Tastați un mesaj ...</string>
+    <string name="type_a_message">Tastați un mesaj …</string>
     <string name="send_message">Trimite mesaj</string>
     <string name="no_requests_found">Nu au fost găsite cereri.</string>
-    <string name="status">Status:</string>
-    <string name="autentificare_in_e_ajutor">Autentificare in e-Ajutor</string>
+    <string name="status">Status: </string>
+    <string name="autentificare_in_e_ajutor">Autentificare în e-Ajutor</string>
     <string name="password">Parola</string>
     <string name="auth">Autentificare</string>
     <string name="forgot_pass">Ai uitat parola?</string>
     <string name="login_with_biometrics">Login with Biometrics</string>
-    <string name="no_acc_question">Nu ai cont? Inregistreaza-te!</string>
-    <string name="register_e_ajutor">Inregistrare in e-Ajutor</string>
+    <string name="no_acc_question">Nu ai cont? Înregistreaza-te!</string>
+    <string name="register_e_ajutor">Înregistrare în e-Ajutor</string>
     <string name="name">Nume</string>
     <string name="first_name">Prenume</string>
-    <string name="phone_number">Numar de telefon</string>
+    <string name="phone_number">Număr de telefon</string>
     <string name="minim_6_caractere">• Minim 6 caractere</string>
     <string name="cel_pu_in_o_liter_mare">• Cel puțin o literă mare</string>
     <string name="cel_pu_in_o_cifr">• Cel puțin o cifră</string>
@@ -181,5 +181,6 @@ sa va inregistrati din nou.</string>
     <string name="sign_out">Deconectați-vă</string>
     <string name="save_my_address">Salvați-mi adresa</string>
     <string name="use_my_current_gps_location">Folosiți Locația Mea GPS Actuală</string>
+    <string name="operator">"Operator: %1$s"</string>
 
 </resources>

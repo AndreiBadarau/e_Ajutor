@@ -86,7 +86,7 @@ class ViewRequestsViewModel : ViewModel() {
                 Log.d(tag, "User role determined: $determinedRole")
                 // Apply a default filter after role is determined.
                 // For Operators, default to "PENDING", for Users, default to "ALL".
-                val initialFilter = if (determinedRole == UserRole.OPERATOR) "PENDING" else "ALL"
+                val initialFilter = if (determinedRole == UserRole.OPERATOR) "IN CURS" else "TOATE"
                 updateQueryBasedOnRoleAndFilter(determinedRole, initialFilter)
 
             } catch (e: Exception) {
@@ -144,7 +144,7 @@ class ViewRequestsViewModel : ViewModel() {
         }
 
         // Apply status filter, unless "ALL"
-        if (!filterStatus.equals("ALL", ignoreCase = true)) {
+        if (!filterStatus.equals("TOATE", ignoreCase = true)) {
             query = query.whereEqualTo("status", filterStatus.lowercase(Locale.ROOT))
         }
 
@@ -231,7 +231,7 @@ class ViewRequestsViewModel : ViewModel() {
         }
         _isLoading.value = true
         val updates = mapOf(
-            "status" to "approved",
+            "status" to "aprobate",
             "rejectionReason" to null // Explicitly clear rejection reason on approval
         )
         db.collection("requests").document(requestId)
@@ -263,7 +263,7 @@ class ViewRequestsViewModel : ViewModel() {
         }
         _isLoading.value = true
         val updates = mapOf(
-            "status" to "rejected",
+            "status" to "refuzate",
             "rejectionReason" to reason.trim()
         )
         db.collection("requests").document(requestId)

@@ -78,7 +78,7 @@
             app:layout_constraintBottom_toBottomOf="@id/textView_benefit_type"
             app:layout_constraintEnd_toStartOf="@id/view_status_indicator"
             app:layout_constraintTop_toTopOf="@id/textView_benefit_type"
-            tools:text="Pending" />
+            tools:text="In curs" />
 
         <!-- Status Indicator (Colored View) -->
         <View

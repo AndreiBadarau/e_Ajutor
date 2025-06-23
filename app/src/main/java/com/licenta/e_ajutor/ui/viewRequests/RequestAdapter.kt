@@ -52,15 +52,15 @@ class RequestAdapter(
 
             // Set status color and indicator
             when (request.status.lowercase(Locale.ROOT)) {
-                "approved" -> {
+                "aprobate" -> {
                     statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_indicator_green))
                     statusIndicatorView.setBackgroundColor(ContextCompat.getColor(context, R.color.status_indicator_green))
                 }
-                "rejected" -> {
+                "refuzate" -> {
                     statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_indicator_red))
                     statusIndicatorView.setBackgroundColor(ContextCompat.getColor(context, R.color.status_indicator_red))
                 }
-                "pending" -> {
+                "in curs" -> {
                     statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_indicator_yellow))
                     statusIndicatorView.setBackgroundColor(ContextCompat.getColor(context, R.color.status_indicator_yellow))
                 }

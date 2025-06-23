@@ -37,8 +37,6 @@ import com.licenta.e_ajutor.model.UserRequest
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// TODO: nu se da refresh la cereri cand schimbi tabul
-
 class ViewRequestsFragment : Fragment() {
 
     private var _binding: FragmentViewRequestsBinding? = null
@@ -50,7 +48,7 @@ class ViewRequestsFragment : Fragment() {
     private var chatAdapter: ChatMessageAdapter? = null
     private var currentChatQuery: Query? = null
 
-    private val detailViewDateFormat = SimpleDateFormat("EEEE, MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
+    private val detailViewDateFormat = SimpleDateFormat("EEEE, d MMMM, yyyy 'at' hh:mm a", Locale("ro","RO"))
     private val TAG = "ViewRequestsFragment"
 
     private lateinit var detailViewBackPressedCallback: OnBackPressedCallback
@@ -91,7 +89,7 @@ class ViewRequestsFragment : Fragment() {
 
     private fun setupFilterTabs() {
         if (binding.tabLayoutFilters.tabCount == 0) {
-            val tabs = listOf("ALL", "PENDING", "APPROVED", "REJECTED")
+            val tabs = listOf("TOATE", "IN CURS", "APROBATE", "REFUZATE")
             tabs.forEach { tabTitle ->
                 binding.tabLayoutFilters.addTab(binding.tabLayoutFilters.newTab().setText(tabTitle))
             }
@@ -421,14 +419,14 @@ class ViewRequestsFragment : Fragment() {
             request.timestamp?.toDate()?.let { detailViewDateFormat.format(it) } ?: "N/A")
 
         val statusColor = when (request.status.lowercase(Locale.ROOT)) {
-            "approved" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_green)
-            "rejected" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_red)
-            "pending" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_yellow)
+            "aprobate" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_green)
+            "refuzate" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_red)
+            "in curs" -> ContextCompat.getColor(requireContext(), R.color.status_indicator_yellow)
             else -> ContextCompat.getColor(requireContext(), R.color.grey_dark)
         }
         detailBinding.textViewDetailStatus.setTextColor(statusColor)
 
-        if (request.status.equals("rejected", ignoreCase = true) && !request.rejectionReason.isNullOrEmpty()) {
+        if (request.status.equals("refuzate", ignoreCase = true) && !request.rejectionReason.isNullOrEmpty()) {
             detailBinding.textViewDetailRejectionReason.text = request.rejectionReason
             detailBinding.cardRejectionReason.isVisible = true
         } else {
@@ -439,12 +437,14 @@ class ViewRequestsFragment : Fragment() {
             detailBinding.textViewDetailUserInfo.text =
                 getString(R.string.utilizator, request.userName.ifEmpty { request.userId })
             detailBinding.textViewDetailUserInfo.isVisible = true
-            detailBinding.linearLayoutOperatorActions.isVisible = request.status.equals("pending", ignoreCase = true)
+            detailBinding.linearLayoutOperatorActions.isVisible = request.status.equals("in curs", ignoreCase = true)
             if (!detailBinding.buttonSubmitRejection.isVisible) {
                 detailBinding.textInputLayoutRejectionReasonInput.isVisible = false
             }
         } else {
-            detailBinding.textViewDetailUserInfo.isVisible = false
+            detailBinding.textViewDetailUserInfo.text =
+                getString(R.string.operator, request.operatorName.ifEmpty { request.operatorId })
+            detailBinding.textViewDetailUserInfo.isVisible = true
             detailBinding.linearLayoutOperatorActions.isVisible = false
             detailBinding.textInputLayoutRejectionReasonInput.isVisible = false
             detailBinding.buttonSubmitRejection.isVisible = false

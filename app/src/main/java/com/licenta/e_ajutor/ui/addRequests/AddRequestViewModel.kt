@@ -99,17 +99,17 @@ class AddRequestViewModel : ViewModel() {
         if (_selectedBenefitType.value?.id != benefitType.id) {
             _selectedBenefitType.value = benefitType
             _uploadedDocuments.value = emptyMap() // Clear previous uploads for new type
-            _uploadStatusText.value = "No file selected"
+            _uploadStatusText.value = "Niciun fișier selectat."
         }
     }
 
     fun uploadFile(docId: String, uri: Uri) {
         val userId = auth.currentUser?.uid ?: run {
-            _uiToastEvent.value = Event("User not logged in.")
+            _uiToastEvent.value = Event("Utilizatorul nu este autentificat.")
             return
         }
         _isLoading.value = true
-        _uploadStatusText.value = "Uploading ${docId}..."
+        _uploadStatusText.value = "Se încarcă ${docId}..."
 
         viewModelScope.launch {
             try {
@@ -120,10 +120,10 @@ class AddRequestViewModel : ViewModel() {
                 val currentUploads = _uploadedDocuments.value?.toMutableMap() ?: mutableMapOf()
                 currentUploads[docId] = downloadUri.toString()
                 _uploadedDocuments.value = currentUploads // This will trigger observer in fragment
-                _uploadStatusText.value = "Uploaded: $docId"
+                _uploadStatusText.value = "S-a încărcat: $docId"
             } catch (e: Exception) {
-                _uploadStatusText.value = "Upload failed for $docId"
-                _uiToastEvent.value = Event("Upload failed for $docId: ${e.message}")
+                _uploadStatusText.value = "Încărcare eșuată pentru $docId"
+                _uiToastEvent.value = Event("Încărcare eșuată pentru $docId: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -132,11 +132,11 @@ class AddRequestViewModel : ViewModel() {
 
     fun deleteDocument(docId: String, callbackOnSuccess: () -> Unit) {
         val userId = auth.currentUser?.uid ?: run {
-            _uiToastEvent.value = Event("User not logged in.")
+            _uiToastEvent.value = Event("Utilizatorul nu este autentificat.")
             return
         }
         _isLoading.value = true
-        _uploadStatusText.value = "Deleting ${docId}..."
+        _uploadStatusText.value = "Se șterge ${docId}..."
 
         viewModelScope.launch {
             try {
@@ -146,12 +146,12 @@ class AddRequestViewModel : ViewModel() {
                 val currentUploads = _uploadedDocuments.value?.toMutableMap() ?: mutableMapOf()
                 currentUploads.remove(docId)
                 _uploadedDocuments.value = currentUploads
-                _uploadStatusText.value = "Deleted: $docId. Select new file."
-                _uiToastEvent.value = Event("Previous file for $docId deleted.")
+                _uploadStatusText.value = "S-a șters: $docId. Selecteaza alt fișier."
+                _uiToastEvent.value = Event("Fișierul anterior pentru $docId a fost șters.")
                 callbackOnSuccess() // To re-launch picker
             } catch (e: Exception) {
-                _uploadStatusText.value = "Deletion failed for $docId"
-                _uiToastEvent.value = Event("Deletion failed for $docId: ${e.message}")
+                _uploadStatusText.value = "Ștergerea a eșuat pentru $docId"
+                _uiToastEvent.value = Event("Ștergerea a eșuat pentru $docId: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -169,7 +169,7 @@ class AddRequestViewModel : ViewModel() {
                     .await()
 
                 if (opSnap.isEmpty) {
-                    _uiToastEvent.postValue(Event("No operators found for county: $countyParam"))
+                    _uiToastEvent.postValue(Event("Nu a fost nicun operator pentru județul: $countyParam"))
                     return@withContext null
                 }
 
@@ -179,7 +179,7 @@ class AddRequestViewModel : ViewModel() {
                     viewModelScope.async { // Use async if you want to run these in parallel and await all
                         val requestCountSnap = db.collection("requests")
                             .whereEqualTo("operatorId", opId)
-                            .whereEqualTo("status", "pending")
+                            .whereEqualTo("status", "in curs")
                             .get()
                             .await()
                         opId to (requestCountSnap.size())
@@ -192,7 +192,7 @@ class AddRequestViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 // Log error e
-                _uiToastEvent.postValue(Event("Error finding operator: ${e.message}")) // Use postValue if on background thread
+                _uiToastEvent.postValue(Event("Eroare în găsirea unui operator: ${e.message}")) // Use postValue if on background thread
                 return@withContext null
             }
         }
@@ -205,13 +205,13 @@ class AddRequestViewModel : ViewModel() {
         gdprAgreed: Boolean
     ) {
         if (!gdprAgreed) {
-            _uiToastEvent.value = Event("Please agree to GDPR terms to submit.")
+            _uiToastEvent.value = Event("Te rog acceptă termenii GDPR pentru a trimite cererea.")
             return
         }
 
         val currentSelectedBenefit = _selectedBenefitType.value
         if (currentSelectedBenefit == null || currentSelectedBenefit.id != benefitTypeIdFromSpinner) {
-            _uiToastEvent.value = Event("Benefit type selection error. Please re-select.")
+            _uiToastEvent.value = Event("Selectarea beneficiului a intampinat o eroare. Te rog alege iar.")
             return
         }
 
@@ -224,12 +224,12 @@ class AddRequestViewModel : ViewModel() {
                 currentSelectedBenefit.requiredDocuments.find { it.id == docId }?.displayName
                     ?: docId
             }
-            _uiToastEvent.value = Event("Please upload all required documents: $missingDocNames")
+            _uiToastEvent.value = Event("Te rog încărca următoarele documente: $missingDocNames")
             return
         }
 
         val userId = auth.currentUser?.uid ?: run {
-            _uiToastEvent.value = Event("User not logged in. Cannot submit request.")
+            _uiToastEvent.value = Event("Utilizatorul nu este autentificat. Nu s-a putut trimite cererea.")
             return
         }
 
@@ -242,7 +242,7 @@ class AddRequestViewModel : ViewModel() {
 
                 if (userCounty.isNullOrBlank()) {
                     _uiToastEvent.value =
-                        Event("Your county is not set in your profile. Please update it.")
+                        Event("Nu ți-ai setat un județ in profil. Te rog setează și încerca din nou.")
                     _isLoading.value = false
                     return@launch
                 }
@@ -250,28 +250,31 @@ class AddRequestViewModel : ViewModel() {
                 val operatorId = findLeastLoadedOperatorByCounty(userCounty)
                 if (operatorId.isNullOrEmpty()) {
                     _uiToastEvent.value =
-                        Event("No operator currently available in $userCounty. Please try again later.")
+                        Event("Niciun operator disponibil in județul: $userCounty. Vă rugăm să încercați din nou.")
                     _isLoading.value = false
                     return@launch
                 }
+                val opDoc = db.collection("users").document(operatorId).get().await()
+                val operatorName = opDoc.getString("firstName") + " " + opDoc.getString("lastName")
 
                 val request = UserRequest(
                     id = requestId, // Use ViewModel's requestId
                     userId = userId,
                     userName = userName.trim(),
                     operatorId = operatorId,
+                    operatorName = operatorName.trim(),
                     benefitTypeId = currentSelectedBenefit.id,
                     benefitTypeName = currentSelectedBenefit.name,
                     location = userCounty,
                     documentLinks = currentUploadedDocsMap,
-                    status = "pending",
+                    status = "in curs",
                     timestamp = Timestamp.now(),
                     iban = iban.trim(),
                     extraInfo = extraInfo.trim()
                 )
 
                 db.collection("requests").document(requestId).set(request).await()
-                _uiToastEvent.value = Event("Request sent successfully to operator $operatorId!")
+                _uiToastEvent.value = Event("Cererea a fost trimisă cu succes operatorului: $operatorName!")
                 _navigateToSeeRequestsEvent.value = Event(Unit)
 
                 // Optionally reset form state after successful submission
@@ -279,7 +282,7 @@ class AddRequestViewModel : ViewModel() {
                 // _uploadedDocuments.value = emptyMap()
 
             } catch (e: Exception) {
-                _uiToastEvent.value = Event("Submission failed: ${e.message}")
+                _uiToastEvent.value = Event("Trimiterea cererei a eșuat: ${e.message}")
             } finally {
                 _isLoading.value = false
             }

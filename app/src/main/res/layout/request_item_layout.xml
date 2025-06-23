@@ -79,7 +79,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/textView_benefit_type_item"
             app:layout_constraintBottom_toBottomOf="@id/textView_benefit_type_item"
-            tools:text="Pending"
+            tools:text="In curs"
             tools:textColor="@color/status_indicator_yellow"/>
 
         <!-- User Identifier (For Operator View - initially GONE) -->
