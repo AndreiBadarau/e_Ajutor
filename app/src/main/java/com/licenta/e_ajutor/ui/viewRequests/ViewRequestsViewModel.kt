@@ -25,7 +25,7 @@ class ViewRequestsViewModel : ViewModel() {
     private val tag = "ViewRequestsViewModel"
 
     // LiveData for User Role
-    private val _userRole = MutableLiveData<UserRole>(UserRole.UNKNOWN)
+    private val _userRole = MutableLiveData(UserRole.UNKNOWN)
     val userRole: LiveData<UserRole> = _userRole
 
     // LiveData for the base query for requests
@@ -33,7 +33,7 @@ class ViewRequestsViewModel : ViewModel() {
     val requestsQuery: LiveData<Query> = _requestsQuery
 
     // LiveData for loading state (main list and detail view)
-    private val _isLoading = MutableLiveData<Boolean>(false)
+    private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
     // LiveData for showing toast messages
@@ -64,7 +64,7 @@ class ViewRequestsViewModel : ViewModel() {
             if (userId == null) {
                 _userRole.value = UserRole.UNKNOWN
                 _isLoading.value = false
-                _toastMessage.value = "User not authenticated. Please log in."
+                _toastMessage.value = "Utilizator nu autentificat. Vă rugăm să vă conectați."
                 // Potentially trigger navigation to login here if desired
                 return@launch
             }
@@ -92,7 +92,7 @@ class ViewRequestsViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(tag, "Error fetching user role for UID: $userId", e)
                 _userRole.value = UserRole.UNKNOWN
-                _toastMessage.value = "Error determining user role: ${e.message}"
+                _toastMessage.value = "Eroare la determinarea rolului utilizatorului: ${e.message}"
                 // Still attempt to update query with UNKNOWN role to show nothing or an error state
                 updateQueryBasedOnRoleAndFilter(UserRole.UNKNOWN, "ALL")
             } finally {
@@ -195,10 +195,12 @@ class ViewRequestsViewModel : ViewModel() {
         Log.d(tag, "Selected request and chat query cleared.")
     }
 
+    //TODO 
+
     fun sendChatMessage(requestId: String, messageText: String) {
         val senderId = auth.currentUser?.uid
         if (senderId == null) {
-            _toastMessage.value = "Cannot send message: User not authenticated."
+            _toastMessage.value = "Nu se poate trimite mesaj: utilizatorul nu este autentificat."
             return
         }
         if (messageText.isBlank()) {
@@ -220,13 +222,13 @@ class ViewRequestsViewModel : ViewModel() {
             }
             .addOnFailureListener { e ->
                 Log.e(tag, "Error sending message to request $requestId", e)
-                _toastMessage.value = "Error sending message: ${e.message}"
+                _toastMessage.value = "Mesaj de trimitere a erorilor: ${e.message}"
             }
     }
 
     fun approveRequest(requestId: String) {
         if (userRole.value != UserRole.OPERATOR) {
-            _toastMessage.value = "Action not allowed."
+            _toastMessage.value = "Acțiunea nu este permisă."
             return
         }
         _isLoading.value = true
@@ -237,13 +239,13 @@ class ViewRequestsViewModel : ViewModel() {
         db.collection("requests").document(requestId)
             .update(updates)
             .addOnSuccessListener {
-                _toastMessage.value = "Request approved."
+                _toastMessage.value = "Cererea aprobată."
                 _operatorActionSuccess.value = true
                 loadRequestDetails(requestId) // Refresh details view
                 Log.d(tag, "Request $requestId approved.")
             }
             .addOnFailureListener { e ->
-                _toastMessage.value = "Error approving request: ${e.message}"
+                _toastMessage.value = "Eroare la aprobarea cererii: ${e.message}"
                 Log.e(tag, "Error approving request $requestId", e)
             }
             .addOnCompleteListener {
@@ -254,7 +256,7 @@ class ViewRequestsViewModel : ViewModel() {
 
     fun rejectRequest(requestId: String, reason: String) {
         if (userRole.value != UserRole.OPERATOR) {
-            _toastMessage.value = "Action not allowed."
+            _toastMessage.value = "Acțiunea nu este permisă."
             return
         }
         if (reason.isBlank()) {
@@ -269,13 +271,13 @@ class ViewRequestsViewModel : ViewModel() {
         db.collection("requests").document(requestId)
             .update(updates)
             .addOnSuccessListener {
-                _toastMessage.value = "Request rejected."
+                _toastMessage.value = "Cererea respinsă."
                 _operatorActionSuccess.value = true
                 loadRequestDetails(requestId) // Refresh details view
                 Log.d(tag, "Request $requestId rejected with reason: $reason")
             }
             .addOnFailureListener { e ->
-                _toastMessage.value = "Error rejecting request: ${e.message}"
+                _toastMessage.value = "Eroare la respingerea cererii: ${e.message}"
                 Log.e(tag, "Error rejecting request $requestId", e)
             }
             .addOnCompleteListener {

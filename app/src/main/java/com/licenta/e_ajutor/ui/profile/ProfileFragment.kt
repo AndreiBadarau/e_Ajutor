@@ -634,7 +634,6 @@ class ProfileFragment : Fragment() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED -> {
                 Log.d(TAG, "Permission already granted, fetching location.")
-                // TODO: Differentiate why location is being fetched.
                 fetchLastLocation()
             }
 
@@ -1019,7 +1018,7 @@ class ProfileFragment : Fragment() {
                         userDataMap["idToken"] = idToken
                         userDataMap["email"] = userEmail // This can be null if userEmail was null
 
-                        val userDataJson = JSONObject(userDataMap).toString()
+                        val userDataJson = JSONObject(userDataMap as Map<*, *>?).toString()
                         Log.d(
                             TAG,
                             "User data JSON to encrypt in storeEncryptedTokenAfterBioAuth: $userDataJson"

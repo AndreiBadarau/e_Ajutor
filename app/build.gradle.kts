@@ -1,4 +1,4 @@
-plugins {
+    plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 
@@ -84,4 +84,5 @@ dependencies {
     implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation ("androidx.hilt:hilt-navigation-compose:1.2.0")
     implementation ("com.firebaseui:firebase-ui-firestore:8.0.0")
+    implementation ("com.google.firebase:firebase-appcheck-playintegrity")
 }

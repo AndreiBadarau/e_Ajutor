@@ -79,6 +79,7 @@ class RequestAdapter(
                 userIdentifierTextView.visibility = View.GONE
             }
 
+            //TODO iconite
             // Optional: Set an icon based on benefit type (example)
             // You would need a mapping from benefitTypeId/Name to drawable resources
             when (request.benefitTypeId.lowercase(Locale.ROOT)) {

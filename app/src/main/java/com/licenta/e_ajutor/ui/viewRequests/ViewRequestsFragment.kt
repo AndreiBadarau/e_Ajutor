@@ -37,6 +37,9 @@ import com.licenta.e_ajutor.model.UserRequest
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+//TODO nu merg
+//TODO AI pt verificarea documentelor
+
 class ViewRequestsFragment : Fragment() {
 
     private var _binding: FragmentViewRequestsBinding? = null

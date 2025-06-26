@@ -83,9 +83,9 @@ class AddRequestViewModel : ViewModel() {
                 }
                 _benefitTypes.value = types
                 // If you want to auto-select the first item after loading:
-                 if (types.isNotEmpty()) {
+                if (types.isNotEmpty()) {
                     onBenefitTypeSelected(types.first()) // Ensure this doesn't cause issues if fragment also tries to set initial
-                 }
+                }
             } catch (e: Exception) {
                 _uiToastEvent.postValue(Event("Failed to load benefit types: ${e.message}"))
                 _benefitTypes.value = emptyList() // Set to empty list on error
@@ -211,7 +211,8 @@ class AddRequestViewModel : ViewModel() {
 
         val currentSelectedBenefit = _selectedBenefitType.value
         if (currentSelectedBenefit == null || currentSelectedBenefit.id != benefitTypeIdFromSpinner) {
-            _uiToastEvent.value = Event("Selectarea beneficiului a intampinat o eroare. Te rog alege iar.")
+            _uiToastEvent.value =
+                Event("Selectarea beneficiului a intampinat o eroare. Te rog alege iar.")
             return
         }
 
@@ -229,7 +230,8 @@ class AddRequestViewModel : ViewModel() {
         }
 
         val userId = auth.currentUser?.uid ?: run {
-            _uiToastEvent.value = Event("Utilizatorul nu este autentificat. Nu s-a putut trimite cererea.")
+            _uiToastEvent.value =
+                Event("Utilizatorul nu este autentificat. Nu s-a putut trimite cererea.")
             return
         }
 
@@ -238,7 +240,9 @@ class AddRequestViewModel : ViewModel() {
             try {
                 val userDoc = db.collection("users").document(userId).get().await()
                 val userCounty = userDoc.getString("county")
-                val userName = (userDoc.getString("firstName") ?: "") + " " + (userDoc.getString("lastName") ?: "")
+                val userName =
+                    (userDoc.getString("firstName") ?: "") + " " + (userDoc.getString("lastName")
+                        ?: "")
 
                 if (userCounty.isNullOrBlank()) {
                     _uiToastEvent.value =
@@ -274,7 +278,8 @@ class AddRequestViewModel : ViewModel() {
                 )
 
                 db.collection("requests").document(requestId).set(request).await()
-                _uiToastEvent.value = Event("Cererea a fost trimisă cu succes operatorului: $operatorName!")
+                _uiToastEvent.value =
+                    Event("Cererea a fost trimisă cu succes operatorului: $operatorName!")
                 _navigateToSeeRequestsEvent.value = Event(Unit)
 
                 // Optionally reset form state after successful submission

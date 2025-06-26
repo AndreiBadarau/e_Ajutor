@@ -182,5 +182,9 @@ sa va inregistrati din nou.</string>
     <string name="save_my_address">Salvați-mi adresa</string>
     <string name="use_my_current_gps_location">Folosiți Locația Mea GPS Actuală</string>
     <string name="operator">"Operator: %1$s"</string>
+    <string name="attach_file">Ataseaza</string>
+    <string name="user_label_template">Utilizator: %1$s\n</string>
+    <string name="operator_label_template">Operator: %1$s</string>
+    <string name="replaced_on">înlocuit: %s$s</string>
 
 </resources>

@@ -129,8 +129,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/uploaded_documents"
-                android:textStyle="bold"
-                android:textAppearance="?attr/textAppearanceSubtitle1" />
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/linearLayout_documents_container"
@@ -153,9 +153,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
                 android:text="@string/financial_information"
-                android:textAppearance="?attr/textAppearanceSubtitle1" />
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textView_detail_iban"
@@ -168,9 +168,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:textStyle="bold"
                 android:text="@string/additional_notes_from_user"
-                android:textAppearance="?attr/textAppearanceSubtitle1" />
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textView_detail_extra_info"
@@ -275,7 +275,7 @@
 
                 <EditText
                     android:id="@+id/editText_chat_message"
-                    android:layout_width="0dp"
+                    android:layout_width="285dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/chat_input_background"
@@ -286,6 +286,16 @@
                     android:padding="12dp" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_attach_file"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@string/attach_file"
+                    android:src="@drawable/ic_attach"
+                    app:elevation="2dp"
+                    app:fabSize="mini" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_send_chat_message"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -294,6 +304,7 @@
                     android:src="@drawable/ic_send"
                     app:elevation="2dp"
                     app:fabSize="mini" />
+
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
