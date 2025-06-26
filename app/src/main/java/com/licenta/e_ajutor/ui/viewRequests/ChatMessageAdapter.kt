@@ -59,6 +59,11 @@ class ChatMessageAdapter(
         return ChatMessageViewHolder(view)
     }
 
+    override fun onDataChanged() {
+        super.onDataChanged()
+        notifyDataSetChanged()
+    }
+
     override fun onBindViewHolder(holder: ChatMessageViewHolder, position: Int, model: ChatMessage) {
         holder.bind(model)
     }

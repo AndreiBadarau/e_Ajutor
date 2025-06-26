@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.tabs.TabLayout
@@ -214,7 +215,12 @@ class ViewRequestsFragment : Fragment() {
                             .build()
                         chatAdapter = ChatMessageAdapter(chatOptions, FirebaseAuth.getInstance().currentUser?.uid ?: "")
                         binding.detailContent.recyclerViewChatMessages.layoutManager =
-                            LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
+                            WrapContentLinearLayoutManager(requireContext()).apply { stackFromEnd = true }
+
+// 2) Dezactivează animațiile de tip change (previne update-uri parţiale care duc la inconsistenţe)
+                        (binding.detailContent.recyclerViewChatMessages.itemAnimator as? SimpleItemAnimator)
+                            ?.supportsChangeAnimations = false
+
                         binding.detailContent.recyclerViewChatMessages.adapter = chatAdapter
                         // chatAdapter?.startListening() // Not strictly needed if setLifecycleOwner is used
                     }
@@ -222,11 +228,12 @@ class ViewRequestsFragment : Fragment() {
 
                     // Scroll to bottom logic (can remain as is if adapter is updated/recreated)
                     chatAdapter?.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-                        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                            super.onItemRangeInserted(positionStart, itemCount)
-                            binding.detailContent.recyclerViewChatMessages.smoothScrollToPosition(
-                                chatAdapter?.itemCount?.takeIf { it > 0 }?.minus(1) ?: 0
-                            )
+                        override fun onChanged() {
+                            super.onChanged()
+                            val count = chatAdapter?.itemCount ?: 0
+                            if (count > 0) {
+                                binding.detailContent.recyclerViewChatMessages.scrollToPosition(count - 1)
+                            }
                         }
                     })
 
