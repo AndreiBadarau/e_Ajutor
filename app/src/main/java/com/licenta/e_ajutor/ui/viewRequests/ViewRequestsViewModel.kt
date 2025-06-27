@@ -1,5 +1,6 @@
 package com.licenta.e_ajutor.ui.viewRequests
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,7 +10,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.storage.FirebaseStorage
 import com.licenta.e_ajutor.model.ChatMessage
+import com.licenta.e_ajutor.model.DocumentRequirement
 import com.licenta.e_ajutor.model.UserRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -22,6 +25,7 @@ class ViewRequestsViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private val tag = "ViewRequestsViewModel"
 
     // LiveData for User Role
@@ -43,6 +47,9 @@ class ViewRequestsViewModel : ViewModel() {
     // LiveData for the currently selected request (for detail view)
     private val _selectedRequest = MutableLiveData<UserRequest?>()
     val selectedRequest: LiveData<UserRequest?> = _selectedRequest
+
+    private val _requiredDocuments = MutableLiveData<List<DocumentRequirement>>()
+    val requiredDocuments: LiveData<List<DocumentRequirement>> = _requiredDocuments
 
     // LiveData for chat messages query for the selected request
     private val _chatMessagesQuery = MutableLiveData<Query?>()
@@ -78,7 +85,10 @@ class ViewRequestsViewModel : ViewModel() {
                     "user" -> UserRole.USER
                     "operator" -> UserRole.OPERATOR
                     else -> {
-                        Log.w(tag, "User role not found or unrecognized: $roleString for UID: $userId")
+                        Log.w(
+                            tag,
+                            "User role not found or unrecognized: $roleString for UID: $userId"
+                        )
                         UserRole.UNKNOWN // Fallback to UNKNOWN if role is missing or invalid
                     }
                 }
@@ -101,6 +111,67 @@ class ViewRequestsViewModel : ViewModel() {
         }
     }
 
+    fun fetchRequiredDocuments(benefitTypeId: String) {
+        viewModelScope.launch {
+            try {
+                val snap = db.collection("benefit_types")
+                    .document(benefitTypeId)
+                    .get()
+                    .await()
+
+                @Suppress("UNCHECKED_CAST")
+                val rawList = snap.get("requiredDocuments") as? List<HashMap<String, String>>
+                val docs = rawList?.mapNotNull { map ->
+                    val id = map["id"]
+                    val name = map["displayName"]
+                    if (id != null && name != null) DocumentRequirement(id, name) else null
+                } ?: emptyList()
+                _requiredDocuments.value = docs
+            } catch (e: Exception) {
+                _toastMessage.value = "Failed to load document requirements: ${e.message}"
+            }
+        }
+    }
+
+    fun replaceDocument(requestId: String, docId: String, uri: Uri) {
+        val userId = auth.currentUser?.uid ?: run {
+            _toastMessage.value = "User not authenticated."
+            return
+        }
+        viewModelScope.launch {
+            try {
+                // Upload to the same path (overwrites)
+                val storageRef = storage.reference
+                    .child("documents/$userId/$requestId/$docId")
+                storageRef.putFile(uri).await()
+                val userDoc = db.collection("users").document(userId).get().await()
+                val userName = (userDoc.getString("firstName") + " " + userDoc.getString("lastName"))
+                val downloadUrl = storageRef.downloadUrl.await().toString()
+
+                // Update the documentLinks map in Firestore
+                db.collection("requests")
+                    .document(requestId)
+                    .update("documentLinks.$docId", downloadUrl)
+                    .await()
+
+                // Optionally reload the request details so UI refreshes
+                loadRequestDetails(requestId)
+
+                val displayName = _requiredDocuments.value
+                    ?.firstOrNull { it.id == docId }
+                    ?.displayName
+                    ?: docId
+
+                sendChatMessage(
+                    requestId,
+                    "$userName a înlocuit documentul: $displayName"
+                )
+            } catch (e: Exception) {
+                _toastMessage.value = "Failed to replace document: ${e.message}"
+            }
+        }
+    }
+
     fun setFilter(filterStatus: String) {
         // isLoading is primarily for data fetching, not just query changes
         // _isLoading.value = true // Optional: show loading if query change is slow
@@ -112,7 +183,8 @@ class ViewRequestsViewModel : ViewModel() {
         val currentUserId = auth.currentUser?.uid
         if (currentUserId == null && role != UserRole.UNKNOWN) {
             Log.e(tag, "Cannot update query: User not logged in, but role is not UNKNOWN.")
-            _requestsQuery.value = db.collection("requests").whereEqualTo("userId", "INVALID_NO_USER") // Empty query
+            _requestsQuery.value =
+                db.collection("requests").whereEqualTo("userId", "INVALID_NO_USER") // Empty query
             return
         }
 
@@ -123,6 +195,7 @@ class ViewRequestsViewModel : ViewModel() {
             UserRole.USER -> {
                 query = query.whereEqualTo("userId", currentUserId)
             }
+
             UserRole.OPERATOR -> {
                 // Operators see requests assigned to them OR unassigned pending requests
                 // This logic might need refinement based on your exact assignment process.
@@ -130,15 +203,20 @@ class ViewRequestsViewModel : ViewModel() {
                 // and they only see requests explicitly assigned to their operatorId.
                 // OR, if your system assigns requests to operators by some other means (e.g. county),
                 // that logic would go here.
-                query = query.whereEqualTo("operatorId", currentUserId) // Example: for assigned requests
+                query = query.whereEqualTo(
+                    "operatorId",
+                    currentUserId
+                ) // Example: for assigned requests
                 // If operators should also see ALL pending requests that are NOT yet assigned:
                 // query = query.whereEqualTo("status", "pending").whereEqualTo("operatorId", null)
                 // This part depends heavily on your application's business logic for operators.
             }
+
             UserRole.UNKNOWN -> {
                 Log.w(tag, "User role is UNKNOWN. Query will yield no results.")
                 // Create a query that intentionally returns no results
-                _requestsQuery.value = query.whereEqualTo("userId", "NON_EXISTENT_USER_FOR_UNKNOWN_ROLE")
+                _requestsQuery.value =
+                    query.whereEqualTo("userId", "NON_EXISTENT_USER_FOR_UNKNOWN_ROLE")
                 return
             }
         }
@@ -194,8 +272,6 @@ class ViewRequestsViewModel : ViewModel() {
         _chatMessagesQuery.value = null
         Log.d(tag, "Selected request and chat query cleared.")
     }
-
-    //TODO 
 
     fun sendChatMessage(requestId: String, messageText: String) {
         val senderId = auth.currentUser?.uid

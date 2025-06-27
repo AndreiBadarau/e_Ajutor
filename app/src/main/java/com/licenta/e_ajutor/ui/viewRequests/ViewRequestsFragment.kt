@@ -1,5 +1,6 @@
 package com.licenta.e_ajutor.ui.viewRequests // Adjust to your package structure
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -16,10 +17,13 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -30,6 +34,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.licenta.e_ajutor.R
 import com.licenta.e_ajutor.databinding.FragmentViewRequestsBinding
@@ -38,7 +43,6 @@ import com.licenta.e_ajutor.model.UserRequest
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-//TODO nu merg
 //TODO AI pt verificarea documentelor
 
 class ViewRequestsFragment : Fragment() {
@@ -51,6 +55,13 @@ class ViewRequestsFragment : Fragment() {
     private var requestAdapter: RequestAdapter? = null
     private var chatAdapter: ChatMessageAdapter? = null
     private var currentChatQuery: Query? = null
+
+    private lateinit var documentPickerLauncher: ActivityResultLauncher<Intent>
+    private var pendingDocForReplace: String? = null
+
+    private lateinit var etAiFeedback: TextView
+    private val auth = FirebaseAuth.getInstance()
+    private val db   = FirebaseFirestore.getInstance()
 
     private val detailViewDateFormat = SimpleDateFormat("EEEE, d MMMM, yyyy 'at' hh:mm a", Locale("ro","RO"))
     private val TAG = "ViewRequestsFragment"
@@ -74,6 +85,7 @@ class ViewRequestsFragment : Fragment() {
         setupFilterTabs()
         setupDetailViewListeners()
         observeViewModel()
+        setupDocumentPickerLauncher()
 
         detailViewBackPressedCallback = object : OnBackPressedCallback(false) {
             override fun handleOnBackPressed() {
@@ -404,6 +416,62 @@ class ViewRequestsFragment : Fragment() {
                     .show()
             }
         }
+
+        detailBinding.fabAttachFile.setOnClickListener {
+            val req = viewModel.selectedRequest.value ?: return@setOnClickListener
+
+            // 1) Fetch the req’d docs for this benefit type
+            viewModel.fetchRequiredDocuments(req.benefitTypeId)
+
+            // 2) Once loaded, show the same AlertDialog
+            viewModel.requiredDocuments.observe(viewLifecycleOwner) { docs ->
+                if (docs.isEmpty()) {
+                    Toast.makeText(requireContext(), "No documents required.", Toast.LENGTH_SHORT)
+                        .show()
+                    return@observe
+                }
+                val names = docs.map { it.displayName }.toTypedArray()
+                val ids = docs.map { it.id }.toTypedArray()
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Select document to replace")
+                    .setItems(names) { _, idx ->
+                        // launch picker, then in the result...
+                        pendingDocForReplace = ids[idx]
+                        // reuse your ActivityResultLauncher (or make a new one)
+                        launchFilePicker()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun launchFilePicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*" // Allow all file types
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        documentPickerLauncher.launch(intent)
+    }
+
+    private fun setupDocumentPickerLauncher() {
+        documentPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    val req = viewModel.selectedRequest.value ?: return@let
+                    pendingDocForReplace?.let { docId ->
+                        // Call our new VM method
+                        viewModel.replaceDocument(req.id, docId, uri)
+                    }
+                }
+            } else {
+                Toast.makeText(context, "No file selected", Toast.LENGTH_SHORT).show()
+            }
+            pendingDocForReplace = null
+        }
     }
 
     private fun populateDetailViewData(request: UserRequest?) {
@@ -418,6 +486,7 @@ class ViewRequestsFragment : Fragment() {
             detailBinding.linearLayoutOperatorActions.isVisible = false
             detailBinding.linearLayoutDocumentsContainer.removeAllViews()
             detailBinding.cardRejectionReason.isVisible = false
+            detailBinding.cardAiFeedback.isVisible = false
             return
         }
 
@@ -444,8 +513,17 @@ class ViewRequestsFragment : Fragment() {
         }
 
         if (viewModel.userRole.value == UserRole.OPERATOR) {
+            Log.d(TAG, "AI Feedback: ${request.aiLightFeedback}")
+            detailBinding.cardAiFeedback.isVisible = true
+            detailBinding.etAiFeedback.text = request.aiLightFeedback
+        } else {
+            detailBinding.cardAiFeedback.isVisible = false
+        }
+
+        if (viewModel.userRole.value == UserRole.OPERATOR) {
             detailBinding.textViewDetailUserInfo.text =
                 getString(R.string.utilizator, request.userName.ifEmpty { request.userId })
+            detailBinding.fabAttachFile.isVisible = false
             detailBinding.textViewDetailUserInfo.isVisible = true
             detailBinding.linearLayoutOperatorActions.isVisible = request.status.equals("in curs", ignoreCase = true)
             if (!detailBinding.buttonSubmitRejection.isVisible) {
@@ -455,6 +533,7 @@ class ViewRequestsFragment : Fragment() {
             detailBinding.textViewDetailUserInfo.text =
                 getString(R.string.operator, request.operatorName.ifEmpty { request.operatorId })
             detailBinding.textViewDetailUserInfo.isVisible = true
+            detailBinding.fabAttachFile.isVisible = true
             detailBinding.linearLayoutOperatorActions.isVisible = false
             detailBinding.textInputLayoutRejectionReasonInput.isVisible = false
             detailBinding.buttonSubmitRejection.isVisible = false

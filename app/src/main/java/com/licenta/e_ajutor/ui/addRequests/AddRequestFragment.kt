@@ -180,8 +180,9 @@ class AddRequestFragment : Fragment() {
 
     private fun launchFilePicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "*/*" // Allow all file types
+            type = "*/*"
             addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "image/*"))
         }
         documentPickerLauncher.launch(intent)
     }

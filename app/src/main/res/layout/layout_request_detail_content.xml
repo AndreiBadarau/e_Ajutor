@@ -83,6 +83,39 @@
                 tools:text="User/Operator: John Doe (john.doe@example.com)"
                 tools:visibility="visible" />
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_ai_feedback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/white"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ai_feedback"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/etAiFeedback"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Feedback AI"
+                        android:inputType="textMultiLine"
+                        android:lines="2"
+                        android:minLines="2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
 
             <!-- Rejection Reason (User + Operator) -->
             <com.google.android.material.card.MaterialCardView
@@ -292,6 +325,7 @@
                     android:layout_marginStart="8dp"
                     android:contentDescription="@string/attach_file"
                     android:src="@drawable/ic_attach"
+                    android:visibility="visible"
                     app:elevation="2dp"
                     app:fabSize="mini" />
 

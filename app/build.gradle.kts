@@ -1,8 +1,8 @@
-    plugins {
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-
-    id("com.google.gms.google-services")
+    id("com.google.gms.google-services") version ("4.4.2")
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -11,12 +11,13 @@ android {
 
     defaultConfig {
         applicationId = "com.licenta.e_ajutor"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
     }
 
     buildTypes {
@@ -40,6 +41,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -81,8 +83,18 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.1")
     implementation("com.google.android.libraries.places:places:4.3.1")
     implementation("com.google.firebase:firebase-storage")
-    implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation ("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation ("com.firebaseui:firebase-ui-firestore:8.0.0")
-    implementation ("com.google.firebase:firebase-appcheck-playintegrity")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.firebaseui:firebase-ui-firestore:8.0.0")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:vision-common:17.3.0")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:17.0.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
 }

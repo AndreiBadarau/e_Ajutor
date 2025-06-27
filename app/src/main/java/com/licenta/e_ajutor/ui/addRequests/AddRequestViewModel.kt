@@ -1,9 +1,12 @@
 package com.licenta.e_ajutor.ui.addRequests
 
+import android.app.Application
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -12,16 +15,24 @@ import com.google.firebase.storage.FirebaseStorage
 import com.licenta.e_ajutor.model.BenefitType
 import com.licenta.e_ajutor.model.DocumentRequirement
 import com.licenta.e_ajutor.model.UserRequest
+import com.licenta.e_ajutor.network.AiChatMessage
 import com.licenta.e_ajutor.util.Event
+import com.licenta.e_ajutor.network.OpenAiClient
+import com.licenta.e_ajutor.network.ChatRequest
+import com.licenta.e_ajutor.network.ChatResponse
+import com.licenta.e_ajutor.util.FileTextUtil
+import com.licenta.e_ajutor.util.OcrUtil
+import com.licenta.e_ajutor.util.PdfUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 typealias CountResult = Pair<String, Int>
 
-class AddRequestViewModel : ViewModel() {
+class AddRequestViewModel(application: Application) : AndroidViewModel(application) {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -53,8 +64,109 @@ class AddRequestViewModel : ViewModel() {
     private val _navigateToSeeRequestsEvent = MutableLiveData<Event<Unit>>()
     val navigateToSeeRequestsEvent: LiveData<Event<Unit>> = _navigateToSeeRequestsEvent
 
+    companion object {
+        private const val MAX_DOWNLOAD_BYTES: Long = 1024 * 1024 * 10 // 10MB
+    }
+
     init {
         loadBenefitTypesFromFirestore()
+    }
+
+    /**
+     * Încarcă imaginile „Cerere_Tip” și „Carte_de_Identitate_Mama”,
+     * extrage text cu OCR și rulează un prompt scurt prin OpenAI
+     * pentru a verifica numele și CNP-ul.
+     */
+    fun runAiLightValidation() {
+        // 1. Obține link-urile de download din hartă
+        val context = getApplication<Application>().applicationContext
+        val docsMap = _uploadedDocuments.value ?: return
+        val formUrl = docsMap["Cerere_Tip"] ?: return
+        val idUrl = docsMap["Carte_de_Identitate_Mama"] ?: return
+
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val formRef = storage.getReferenceFromUrl(formUrl)
+                val idRef = storage.getReferenceFromUrl(idUrl)
+                val formBytes = formRef.getBytes(MAX_DOWNLOAD_BYTES).await()
+                val idBytes = idRef.getBytes(MAX_DOWNLOAD_BYTES).await()
+                val formMeta = formRef.metadata.await()
+                val idMeta = idRef.metadata.await()
+
+                // 2. Extrage text indiferent de format
+                val formText = FileTextUtil.extractText(
+                    context,
+                    formBytes,
+                    formMeta.contentType,
+                    formRef.name
+                )
+                val idText = FileTextUtil.extractText(
+                    context,
+                    idBytes,
+                    idMeta.contentType,
+                    idRef.name
+                )
+
+                Log.d("AI_Debug", "Form text: $formText")
+                Log.d("AI_Debug", "ID text: $idText")
+
+                // 5. Construiește prompt-ul Light
+                val chatReq = ChatRequest(
+                    messages = listOf(
+                        AiChatMessage(
+                            "system",
+                            "Ești expert în verificarea numelui și CNP-ului."
+                        ),
+                        AiChatMessage(
+                            "user",
+                            """
+                    Text CERERE TIP:
+                    $formText
+
+                    Text BULETIN MAMA:
+                    $idText
+
+                    Ești un
+    EXPERT în verificarea numelui și CNP-ului. 
+    DUPĂ ce analizezi datele, RĂSPUNDE DOAR cu:
+      – “CNP sau NUME corespund” (fără ghilimele) dacă numele și CNP-ul CORESPUND,
+      – “CNP sau NUME nu corespund” (fără ghilimele) dacă NU corespund.
+    NU ADĂUGA nimic altceva în răspuns.
+                    """.trimIndent()
+                        )
+                    )
+                )
+
+                // 6. Apelează OpenAI
+                val response = OpenAiClient.api.createChat(chatReq)
+                Log.d("AI_Debug", "OpenAI response: $response")
+
+                val feedback = response.choices
+                    .firstOrNull()
+                    ?.message
+                    ?.content
+                    ?: "Nicio neconcordanță găsită."
+                Log.d("AI_Debug", "Feedback: $feedback")
+
+                // 7. Salvează în Firestore în câmpul aiLightFeedback
+                db.collection("requests")
+                    .document(requestId)
+                    .update("aiLightFeedback", feedback)
+                    .await()
+
+            } catch (e: HttpException) {
+                val code = e.code()
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.e("AI_Debug", "OpenAI HTTP $code: $errorBody")
+                _uiToastEvent.postValue(Event("Eroare AI $code: vedeți logcat pentru detalii"))
+            } catch (e: Exception) {
+                Log.e("AI_Debug", "Unexpected error", e)
+                _uiToastEvent.postValue(Event("Eroare validare AI: ${e.localizedMessage}"))
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun loadBenefitTypesFromFirestore() {
@@ -274,13 +386,20 @@ class AddRequestViewModel : ViewModel() {
                     status = "in curs",
                     timestamp = Timestamp.now(),
                     iban = iban.trim(),
-                    extraInfo = extraInfo.trim()
+                    extraInfo = extraInfo.trim(),
+                    aiLightFeedback = "",
+                    aiFullFeedback = ""
                 )
 
                 db.collection("requests").document(requestId).set(request).await()
+                Log.d("AddRequestViewModel", "Cererea a fost trimisă cu succes.")
+
+                runAiLightValidation()
+                Log.d("AddRequestViewModel", "AiLightValidation a fost rulat cu succes.")
+
                 _uiToastEvent.value =
                     Event("Cererea a fost trimisă cu succes operatorului: $operatorName!")
-                _navigateToSeeRequestsEvent.value = Event(Unit)
+                //_navigateToSeeRequestsEvent.value = Event(Unit)
 
                 // Optionally reset form state after successful submission
                 // _selectedBenefitType.value = null // This will trigger observers to clear UI

@@ -16,5 +16,9 @@ data class UserRequest(
     val timestamp: Timestamp = Timestamp.now(),
     val iban: String = "",
     val extraInfo: String = "",
-    val rejectionReason: String = ""
+    val rejectionReason: String = "",
+
+    // AI FIELDs
+    val aiLightFeedback: String = "",
+    val aiFullFeedback: String = ""
 )
