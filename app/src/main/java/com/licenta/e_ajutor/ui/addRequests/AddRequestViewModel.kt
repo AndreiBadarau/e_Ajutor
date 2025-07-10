@@ -19,10 +19,7 @@ import com.licenta.e_ajutor.network.AiChatMessage
 import com.licenta.e_ajutor.util.Event
 import com.licenta.e_ajutor.network.OpenAiClient
 import com.licenta.e_ajutor.network.ChatRequest
-import com.licenta.e_ajutor.network.ChatResponse
 import com.licenta.e_ajutor.util.FileTextUtil
-import com.licenta.e_ajutor.util.OcrUtil
-import com.licenta.e_ajutor.util.PdfUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch

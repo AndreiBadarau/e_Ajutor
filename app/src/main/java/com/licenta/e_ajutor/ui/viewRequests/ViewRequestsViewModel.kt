@@ -280,21 +280,19 @@ class ViewRequestsViewModel : ViewModel() {
             return
         }
         if (messageText.isBlank()) {
-            // _toastMessage.value = "Message cannot be empty." // Fragment handles this
+//            _toastMessage.value = "Message cannot be empty."
             return
         }
 
         val chatMessage = ChatMessage(
             senderId = senderId,
             text = messageText.trim()
-            // Firestore @ServerTimestamp will handle the timestamp
         )
 
         db.collection("requests").document(requestId).collection("chat")
             .add(chatMessage)
             .addOnSuccessListener {
                 Log.d(tag, "Message sent successfully to request $requestId")
-                // The UI will update automatically due to FirestoreRecyclerAdapter listening to the query
             }
             .addOnFailureListener { e ->
                 Log.e(tag, "Error sending message to request $requestId", e)

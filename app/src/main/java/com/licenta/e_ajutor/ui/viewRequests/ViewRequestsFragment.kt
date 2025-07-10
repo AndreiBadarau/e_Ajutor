@@ -23,7 +23,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
-import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -490,7 +489,7 @@ class ViewRequestsFragment : Fragment() {
             return
         }
 
-        detailBinding.toolbarDetail.title = "Request #${request.id.takeLast(6).uppercase(Locale.ROOT)}"
+        detailBinding.toolbarDetail.title = "Cererea #${request.id.takeLast(6).uppercase(Locale.ROOT)}"
         detailBinding.textViewDetailBenefitType.text = request.benefitTypeName.ifEmpty { request.benefitTypeId }
         detailBinding.textViewDetailStatus.text = request.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
         detailBinding.textViewDetailSubmissionDate.text = getString(
