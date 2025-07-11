@@ -1,15 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+
     <!-- Base application theme (Light mode) -->
     <style name="Theme.EAjutor" parent="Theme.Material3.Light.NoActionBar">
         <!-- Primary brand color -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item> <!-- Consider mapping to colorPrimaryContainer or similar M3 role -->
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorPrimary">@color/colorPrimary</item> <!-- #1976D2 -->
+        <item name="colorOnPrimary">@color/white</item> <!-- Text/icons ON primary color -->
 
         <!-- Secondary brand color -->
         <item name="colorSecondary">@color/colorSecondary</item>
-        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item> <!-- Consider mapping to colorSecondaryContainer -->
-        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorOnSecondary">@color/white</item> <!-- Text/icons ON secondary color -->
+
+        <!-- Accent/Tertiary color (Material 3 use) - mapping your colorAccent -->
+        <item name="colorTertiary">@color/colorAccent</item>
+        <item name="colorOnTertiary">@color/black</item> <!-- Assuming colorAccent is light -->
 
         <!-- Error colors -->
         <item name="colorError">@color/colorError</item>
@@ -17,40 +20,42 @@
         <item name="colorErrorContainer">@color/colorErrorBackground</item>
         <item name="colorOnErrorContainer">@color/colorError</item>
 
+        <!-- Surface colors (backgrounds for cards, sheets, menus) -->
+        <item name="colorSurface">@color/white</item> <!-- Typically white or light grey in light theme -->
+        <item name="colorOnSurface">@color/black</item> <!-- Text/icons on surface -->
+        <item name="colorSurfaceVariant">@color/light_grey</item> <!-- Slightly different surface -->
+        <item name="colorOnSurfaceVariant">@color/black</item> <!-- Text/icons on surface variant -->
+        <item name="android:colorBackground">@color/white</item> <!-- Default window background -->
+
         <!-- Status bar color -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/colorPrimary</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
 
-        <!-- Define action bar theme attributes for the main theme -->
-        <!-- This will be inherited by Toolbars unless they specify their own android:theme -->
-        <item name="actionBarTheme">@style/Theme.EAjutor.AppBarOverlay</item>
-        <item name="actionBarPopupTheme">@style/Theme.EAjutor.PopupOverlay</item>
+        <!-- Apply Toolbar style for Light Theme -->
+        <item name="toolbarStyle">@style/Widget.EAjutor.Toolbar.Light</item>
 
+        <!-- Theme for the Toolbar's overflow popup menu -->
+        <item name="actionBarPopupTheme">@style/Theme.EAjutor.PopupOverlay.Light</item>
     </style>
 
-    <!-- AppBarOverlay: Used for the AppBar/Toolbar itself -->
-    <!-- Option 1: If your Toolbar background (colorPrimary) is DARK -->
-    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar">
-        <!-- This ensures text/icons on the Toolbar are light (e.g., white) -->
-        <!-- You can further customize Toolbar text appearance here if needed -->
-        <!-- <item name="android:textColorPrimary">@color/white</item> -->
+    <!-- Style for MaterialToolbar in Light Theme -->
+    <style name="Widget.EAjutor.Toolbar.Light" parent="Widget.Material3.Toolbar">
+        <item name="android:background">?attr/colorPrimary</item> <!-- Uses #1976D2 -->
+        <item name="titleTextColor">@color/white</item> <!-- White text on blue background -->
+        <item name="subtitleTextColor">#B3FFFFFF</item> <!-- Lighter white for subtitle (70% alpha) -->
+        <item name="navigationIconTint">@color/white</item> <!-- White navigation icon -->
+        <!-- For menu item icons, Material3 tends to use colorOnSurface or a specific menu theme -->
+        <!-- Ensure your menu item icons are tinted appropriately if they don't pick this up. -->
+        <item name="android:textColorSecondary">@color/white</item> <!-- For overflow icon, etc. -->
     </style>
 
-    <!-- Option 2: If your Toolbar background (colorPrimary) is LIGHT -->
-    <!--
-    <style name="Theme.EAjutor.AppBarOverlay" parent="ThemeOverlay.Material3.Light.ActionBar">
-    -->
-    <!-- This ensures text/icons on the Toolbar are dark -->
-    <!--
+    <!-- PopupOverlay for Toolbar's overflow menu in Light Theme -->
+    <style name="Theme.EAjutor.PopupOverlay.Light" parent="ThemeOverlay.Material3.Light">
+        <!-- Background of the popup menu -->
+        <item name="android:background">@color/white</item>
+        <!-- Text color for items in the popup menu -->
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">@color/grey_dark</item>
     </style>
-    -->
 
-    <!-- PopupOverlay: Used for the Toolbar's overflow popup menu -->
-    <style name="Theme.EAjutor.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
-    <!-- This makes the background of the popup menu light and the text dark. -->
-
-    <!-- This style is redundant if Theme.EAjutor is always your app theme and is NoActionBar -->
-    <!-- <style name="Theme.EAjutor.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style> -->
 </resources>

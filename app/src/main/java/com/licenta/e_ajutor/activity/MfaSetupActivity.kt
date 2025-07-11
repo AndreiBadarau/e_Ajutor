@@ -9,6 +9,10 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -57,6 +61,18 @@ class MfaSetupActivity : AppCompatActivity() {
         checkCurrentUserAndSession()
 
         phoneNumberAutoFill()
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val rootView = binding.root
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            view.updatePadding(
+                top = insets.top
+            )
+            windowInsets
+        }
 
         binding.btnSendVerificationCode.setOnClickListener {
             val phoneNumber = binding.etPhoneNumber.text.toString().trim()

@@ -94,15 +94,17 @@
         android:id="@+id/buttonBiometricLogin"
         android:layout_width="78dp"
         android:layout_height="72dp"
-        android:layout_marginStart="16dp"
+        android:layout_marginBottom="70dp"
         android:contentDescription="@string/login_with_biometrics"
         android:scaleType="centerInside"
-        android:src="@drawable/ic_fingerprint"
+        android:src="@drawable/ic_finger100"
+        android:background="@android:color/transparent"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@+id/googleSignInButton"
-        app:layout_constraintStart_toEndOf="@+id/googleSignInButton"
-        app:layout_constraintTop_toTopOf="@+id/googleSignInButton"
-        tools:visibility="visible"/>
+        app:layout_constraintBottom_toTopOf="@+id/textViewGoToRegister"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
 
     <TextView
         android:id="@+id/textViewGoToRegister"

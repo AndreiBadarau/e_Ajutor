@@ -4,8 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -25,6 +31,9 @@ class OperatorDashboardActivity : AppCompatActivity() {
         binding = ActivityOperatorDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val toolbar: Toolbar = findViewById(R.id.activityToolbar)
+        setSupportActionBar(toolbar)
+
         auth = Firebase.auth
 
         if (auth.currentUser == null) {
@@ -34,11 +43,21 @@ class OperatorDashboardActivity : AppCompatActivity() {
             return
         }
 
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.colorPrimary)
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = false
+
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.operator_nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
         binding.operatorNavView.setupWithNavController(navController)
+
+        setSupportActionBar(binding.activityToolbar)
+        setupActionBarWithNavController(
+            navController,
+            AppBarConfiguration(navController.graph)
+        )
     }
 
     override fun onSupportNavigateUp(): Boolean {

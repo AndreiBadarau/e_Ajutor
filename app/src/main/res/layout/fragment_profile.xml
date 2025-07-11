@@ -19,28 +19,18 @@
 
     <TextView
         android:id="@+id/textViewFirstName"
-        android:layout_width="260dp"
+        android:layout_width="245dp"
         android:layout_height="27dp"
-        android:layout_marginStart="8dp"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintBaseline_toBaselineOf="@id/textViewFirstNameLabel"
+        app:layout_constraintTop_toTopOf="@id/textViewFirstNameLabel"
+        app:layout_constraintBottom_toBottomOf="@id/textViewFirstNameLabel"
         app:layout_constraintEnd_toStartOf="@+id/buttonEditName"
-        app:layout_constraintStart_toEndOf="@id/textViewFirstNameLabel"
+        app:layout_constraintStart_toEndOf="@+id/textViewFirstNameLabel"
         tools:text="John" />
 
 
     <!-- Last Name -->
-
-    <ImageButton
-        android:id="@+id/buttonEditName"
-        android:layout_width="67dp"
-        android:layout_height="56dp"
-        android:contentDescription="@string/edit_name"
-        android:src="@drawable/ic_menu_edit"
-        app:layout_constraintBottom_toBottomOf="@+id/textViewLastName"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/textViewFirstName" />
 
     <TextView
         android:id="@+id/textViewLastNameLabel"
@@ -50,21 +40,32 @@
         android:text="@string/prenume"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textViewFirstNameLabel" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewFirstNameLabel" />
 
-
-    <!-- Email -->
     <TextView
         android:id="@+id/textViewLastName"
-        android:layout_width="233dp"
+        android:layout_width="230dp"
         android:layout_height="23dp"
-        android:layout_marginStart="8dp"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintBaseline_toBaselineOf="@id/textViewLastNameLabel"
+        app:layout_constraintTop_toTopOf="@id/textViewLastNameLabel"
+        app:layout_constraintBottom_toBottomOf="@id/textViewLastNameLabel"
         app:layout_constraintEnd_toStartOf="@+id/buttonEditName"
-        app:layout_constraintStart_toEndOf="@id/textViewLastNameLabel"
+        app:layout_constraintStart_toEndOf="@+id/textViewLastNameLabel"
         tools:text="Doe" />
+
+    <ImageButton
+        android:id="@+id/buttonEditName"
+        android:layout_width="67dp"
+        android:layout_height="56dp"
+        android:background="@null"
+        android:contentDescription="@string/edit_name"
+        android:src="@drawable/ic_menu_edit"
+        app:layout_constraintBottom_toBottomOf="@+id/textViewLastName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/textViewFirstName" />
+
+    <!-- Email -->
 
     <TextView
         android:id="@+id/textViewEmailLabel"
@@ -82,10 +83,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:textSize="18sp"
+        android:textStyle="bold"
         app:layout_constraintBaseline_toBaselineOf="@id/textViewEmailLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/textViewEmailLabel"
-        android:textStyle="bold"
         tools:text="john.doe@example.com" />
 
     <!-- Phone -->
@@ -105,10 +106,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:textSize="18sp"
+        android:textStyle="bold"
         app:layout_constraintBaseline_toBaselineOf="@id/textViewPhoneLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/textViewPhoneLabel"
-        android:textStyle="bold"
         tools:text="0123456789" />
 
     <!-- Placeholder for "2FA" (we'll implement later) -->
@@ -127,8 +128,8 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
-        android:textStyle="bold"
         android:text="@string/activa_i_autentificare_biometric"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/buttonSetup2FA" />
@@ -138,7 +139,7 @@
         android:id="@+id/buttonSignOut"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="68dp"
+        android:layout_marginBottom="30dp"
         android:backgroundTint="@color/colorError"
         android:text="@string/sign_out"
         app:layout_constraintBottom_toBottomOf="parent"

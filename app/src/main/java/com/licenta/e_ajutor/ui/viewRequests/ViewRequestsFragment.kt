@@ -86,6 +86,8 @@ class ViewRequestsFragment : Fragment() {
         observeViewModel()
         setupDocumentPickerLauncher()
 
+        binding.recyclerViewRequests.itemAnimator = null
+
         detailViewBackPressedCallback = object : OnBackPressedCallback(false) {
             override fun handleOnBackPressed() {
                 if (binding.detailContent.root.isVisible) {
@@ -128,7 +130,7 @@ class ViewRequestsFragment : Fragment() {
             role?.let {
                 // Update Activity's toolbar title if not in detail view
                 if (!binding.detailContent.root.isVisible) {
-                    val title = if (it == UserRole.OPERATOR) "Assigned Requests" else "My Requests"
+                    val title = if (it == UserRole.OPERATOR) "Cereri atribuite" else "Cererile mele"
                     (activity as? AppCompatActivity)?.supportActionBar?.title = title
                 }
 

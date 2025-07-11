@@ -8,13 +8,13 @@
     <fragment
         android:id="@+id/operator_profile_dashboard"
         android:name="com.licenta.e_ajutor.ui.profile.ProfileFragment"
-        android:label="fragment_operator_dashboard"
+        android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/operator_navigation_manage_requests"
         android:name="com.licenta.e_ajutor.ui.viewRequests.ViewRequestsFragment"
-        android:label="fragment_manage_requests"
+        android:label="@string/see_requests"
         tools:layout="@layout/fragment_view_requests" />
 
 </navigation>

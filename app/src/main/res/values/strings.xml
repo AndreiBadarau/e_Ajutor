@@ -166,9 +166,9 @@ sa va inregistrati din nou.</string>
     <string name="cel_pu_in_un_caracter_special">• Cel puțin un caracter special (!@#$%^*)</string>
     <string name="already_account">Ai deja un cont?</string>
     <string name="benefit_type_icon">Benefit Type Icon</string>
-    <string name="nume_">Nume:</string>
+    <string name="nume_">Nume: </string>
     <string name="edit_name">Edit Name</string>
-    <string name="prenume">Prenume:</string>
+    <string name="prenume">Prenume: </string>
     <string name="adresa_de_e_mail_">Adresa de e-mail:</string>
     <string name="num_r_de_telefon">Număr de telefon:</string>
     <string name="setup_2_factor_authentication">Setare Autentificare cu 2 Factori</string>
