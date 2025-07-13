@@ -86,6 +86,7 @@ sa va inregistrati din nou.</string>
     <string name="mfa_enrollment_failed">Înrolarea MFA a eșuat: %1$s</string>
     <string name="please_upload_all_required_documents_for">Vă rugăm să încărcați toate documentele necesare pentru %1$s.</string>
     <string name="select_a_benefit_type_to_see_requirements">Selectați un tip de beneficii pentru a vedea cerințele.</string>
+    <string name="select_a_benefit_to_see_requirements">Selectați un tip de îndemnizație pentru a putea vedea infomarțiile necesare</string>
     <string name="uploaded_of_documents">Ați %1$d din %2$d documente.</string>
     <string name="all_required_documents_uploaded">Toate documentele necesare sunt încărcate.</string>
     <string name="no_documents_required_for_this_benefit_type">Nu sunt necesare documente pentru acest tip de beneficii.</string>
@@ -187,5 +188,10 @@ sa va inregistrati din nou.</string>
     <string name="operator_label_template">Operator: %1$s</string>
     <string name="replaced_on">înlocuit: %s$s</string>
     <string name="ai_feedback">Feedback AI:</string>
+    <string name="default_notification_channel_id">request_status_channel</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="aici_va_fi_descrierea">Aici va fi descrierea</string>
+    <string name="sursa">Sursa</string>
 
 </resources>

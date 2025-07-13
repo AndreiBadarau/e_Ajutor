@@ -301,6 +301,7 @@ class ViewRequestsViewModel : ViewModel() {
     }
 
     fun approveRequest(requestId: String) {
+
         if (userRole.value != UserRole.OPERATOR) {
             _toastMessage.value = "Acțiunea nu este permisă."
             return

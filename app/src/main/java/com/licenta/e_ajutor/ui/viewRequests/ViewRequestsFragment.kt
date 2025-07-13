@@ -33,7 +33,6 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.licenta.e_ajutor.R
 import com.licenta.e_ajutor.databinding.FragmentViewRequestsBinding
@@ -57,10 +56,6 @@ class ViewRequestsFragment : Fragment() {
 
     private lateinit var documentPickerLauncher: ActivityResultLauncher<Intent>
     private var pendingDocForReplace: String? = null
-
-    private lateinit var etAiFeedback: TextView
-    private val auth = FirebaseAuth.getInstance()
-    private val db   = FirebaseFirestore.getInstance()
 
     private val detailViewDateFormat = SimpleDateFormat("EEEE, d MMMM, yyyy 'at' hh:mm a", Locale("ro","RO"))
     private val TAG = "ViewRequestsFragment"
@@ -387,10 +382,10 @@ class ViewRequestsFragment : Fragment() {
         detailBinding.buttonApproveRequest.setOnClickListener {
             viewModel.selectedRequest.value?.id?.let { requestId ->
                 AlertDialog.Builder(requireContext())
-                    .setTitle("Confirm Approval")
-                    .setMessage("Are you sure you want to approve this request?")
-                    .setPositiveButton("Approve") { _, _ -> viewModel.approveRequest(requestId) }
-                    .setNegativeButton("Cancel", null)
+                    .setTitle("Confirmați Aprobarea")
+                    .setMessage("Sunteți sigur că doriți să aprobați această cerere?")
+                    .setPositiveButton("Aprobă") { _, _ -> viewModel.approveRequest(requestId) }
+                    .setNegativeButton("Anulează", null)
                     .show()
             }
         }
@@ -410,10 +405,10 @@ class ViewRequestsFragment : Fragment() {
             detailBinding.textInputLayoutRejectionReasonInput.error = null
             viewModel.selectedRequest.value?.id?.let { requestId ->
                 AlertDialog.Builder(requireContext())
-                    .setTitle("Confirm Rejection")
-                    .setMessage("Are you sure you want to reject this request with the provided reason?")
-                    .setPositiveButton("Reject") { _, _ -> viewModel.rejectRequest(requestId, reason) }
-                    .setNegativeButton("Cancel", null)
+                    .setTitle("Confirmați Respingerea")
+                    .setMessage("Sunteți sigur că doriți să respingeți această cerere cu motivul furnizat?")
+                    .setPositiveButton("Respinge") { _, _ -> viewModel.rejectRequest(requestId, reason) }
+                    .setNegativeButton("Anulează", null)
                     .show()
             }
         }

@@ -19,17 +19,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Titlu -->
-        <TextView
-            android:id="@+id/requestTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"
-            android:text="@string/submit_a_new_request"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
         <!-- Selectarea indemnizației -->
         <TextView
             android:layout_width="wrap_content"

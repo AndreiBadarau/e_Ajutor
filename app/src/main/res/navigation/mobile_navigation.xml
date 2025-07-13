@@ -13,6 +13,16 @@
 
     <fragment
         android:id="@+id/navigation_add_request"
+        android:name="com.licenta.e_ajutor.ui.addRequests.InformationAddRequestFragment"
+        android:label="Informații Adăugare Cerere"
+        tools:layout="@layout/fragment_information_request">
+        <action
+            android:id="@+id/action_information_to_add_request_form"
+            app:destination="@id/addRequestFormFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addRequestFormFragment"
         android:name="com.licenta.e_ajutor.ui.addRequests.AddRequestFragment"
         android:label="@string/add_requests"
         tools:layout="@layout/fragment_add_request" />

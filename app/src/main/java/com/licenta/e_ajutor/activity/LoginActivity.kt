@@ -48,10 +48,12 @@ import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.PhoneMultiFactorGenerator
 import com.google.firebase.auth.PhoneMultiFactorInfo
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import com.licenta.e_ajutor.PREFS_NAME
 import com.licenta.e_ajutor.PREF_IS_BIOMETRIC_ENABLED_PREFIX
 import com.licenta.e_ajutor.PREF_KEY_BIOMETRIC_KEY_ALIAS_PREFIX
@@ -155,6 +157,8 @@ class LoginActivity : AppCompatActivity() {
             binding.progressBarLogin.visibility = View.GONE
             checkBiometricAvailabilityAndSetupLoginPrompt()
         }
+
+        storeFcmTokenForCurrentUser()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -247,6 +251,25 @@ class LoginActivity : AppCompatActivity() {
             }
         }
         Log.d(tag, "LoginActivity onCreate finished successfully")
+    }
+
+    private fun storeFcmTokenForCurrentUser() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w(tag, "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+            val token = task.result
+            Log.d(tag, "FCM Token: $token")
+
+            // Salvează token-ul în Firestore pentru utilizatorul curent
+            val userDocRef =
+                FirebaseFirestore.getInstance().collection("users").document(userId)
+            userDocRef.update("fcmToken", token)
+                .addOnSuccessListener { Log.d(tag, "FCM token updated for user $userId") }
+                .addOnFailureListener { e -> Log.w(tag, "Error updating FCM token for user $userId", e) }
+        }
     }
 
     private fun askNotificationPermission() {

@@ -1,7 +1,6 @@
 package com.licenta.e_ajutor.ui.addRequests
 
 import android.app.Application
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -16,9 +15,9 @@ import com.licenta.e_ajutor.model.BenefitType
 import com.licenta.e_ajutor.model.DocumentRequirement
 import com.licenta.e_ajutor.model.UserRequest
 import com.licenta.e_ajutor.network.AiChatMessage
-import com.licenta.e_ajutor.util.Event
-import com.licenta.e_ajutor.network.OpenAiClient
 import com.licenta.e_ajutor.network.ChatRequest
+import com.licenta.e_ajutor.network.OpenAiClient
+import com.licenta.e_ajutor.util.Event
 import com.licenta.e_ajutor.util.FileTextUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
