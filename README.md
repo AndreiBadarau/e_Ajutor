@@ -9,6 +9,7 @@ The **e-Ajutor** application offers a complete flow for citizens: registration/a
 ## General description
 
 e-Ajutor is a mobile application built to simplify the bureaucratic process of submitting applications for social benefits (unemployment benefit, child allowance, sick leave, etc.). Users can fill out digital forms, upload supporting documents, receive automatic validations (AI) and communicate in real time with operators in public institutions. Operators manage applications from the same application (differentiated layout depending on role).
+
 ---
 
 ## Main functionalities
